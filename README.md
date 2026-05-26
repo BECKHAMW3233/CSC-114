@@ -22,7 +22,6 @@ U.S. Army veteran — 13B Field Artillery, 38B Civil Affairs. Two combat deploym
 
 Graduated May 2026 with an AAS in Information Technology / Systems Security & Analysis (Highest Honors, 4.000 GPA, President's List every eligible semester since Fall 2023). Currently pursuing a second AAS in Information Technology / Computer Programming & Development. Former AI Data Analyst on the DoD Pathfinder Project (2024–2025).
 
-Certifications: CompTIA Security+ · CySA+ (in progress)
 
 ---
 
