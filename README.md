@@ -18,7 +18,7 @@ Course work, labs, and projects for CSC-114 Artificial Intelligence I (Summer 20
 
 **William E. Beckham III** · [BECKHAMW3233](https://github.com/BECKHAMW3233)
 
-U.S. Army veteran — 13B Field Artillery, 38B Civil Affairs. Two combat deployments to Afghanistan (2001–2009). Eight years of residency in Okinawa, Japan as a dependent of a Special Forces Master Sergeant stationed at Torii Station, 1st Special Forces Group.
+U.S. Army veteran — 13B Field Artillery, 38B Civil Affairs. Two combat deployments to Afghanistan (2001–2009). Eight years of residency in Okinawa, Japan.
 
 Graduated May 2026 with an AAS in Information Technology / Systems Security & Analysis (Highest Honors, 4.000 GPA, President's List every eligible semester since Fall 2023). Currently pursuing a second AAS in Information Technology / Computer Programming & Development. Former AI Data Analyst on the DoD Pathfinder Project (2024–2025).
 
