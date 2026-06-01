@@ -39,3 +39,9 @@ The file upload and attachment process was the most challenging part of this lab
 Once files were uploaded and File IDs were obtained, attaching them to the session under Resources required entering each File ID and mount path manually one at a time. An additional error — "Missing required tool: file resources require the read tool to be usable" — appeared because the `agent_toolset_20260401` block had been removed from the YAML during cleanup. Re-adding it fixed the session creation.
 
 The process required critical thinking to diagnose each failure point and systematic testing to resolve them. Once the setup was correct the agent itself performed as expected on all three tests.
+
+---
+
+## Session Verification
+
+The raw session event log (`session-events-sesn_01CGfjAYcjAR1hwyZZoN8fEn.json`) is included in this project folder as verification of the live agent session. It contains the full event stream including user messages, agent responses, tool calls, and file read results confirming the agent read from the uploaded knowledge files during testing.
