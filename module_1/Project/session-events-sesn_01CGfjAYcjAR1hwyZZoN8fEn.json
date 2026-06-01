@@ -1,0 +1,378 @@
+[
+  {
+    "id": "sevt_01EreRuuxR8PN3MRw6XU22Rd",
+    "processed_at": "2026-06-01T14:46:56.460349Z",
+    "type": "session.status_running"
+  },
+  {
+    "agent_name": "web-secplus-bot",
+    "id": "sevt_01Uk7Tx5yDYjxcdNAKX4hcnP",
+    "processed_at": "2026-06-01T14:46:56.460350Z",
+    "session_thread_id": "sthr_017kSwEmuGQniahrtpDx5qM7",
+    "type": "session.thread_status_running"
+  },
+  {
+    "content": [
+      {
+        "text": "What is the CIA Triad and which SY0-701 objective does it fall under?",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01LLhoBixgDq4NycR7by9qzy",
+    "processed_at": "2026-06-01T14:46:59.186058Z",
+    "type": "user.message"
+  },
+  {
+    "id": "sevt_016TpBxoxdwbcdcyp8kwQzi1",
+    "processed_at": "2026-06-01T14:46:59.186059Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "id": "sevt_01FsP1TpTodpGc5rhMC3fLB1",
+    "processed_at": "2026-06-01T14:46:59.186060Z",
+    "type": "agent.thinking"
+  },
+  {
+    "evaluated_permission": "allow",
+    "id": "sevt_01G2Gst5P1c88RNM25FRWMJW",
+    "input": {
+      "file_path": "/uploads/Section 2_ Fundamentals of Security.md"
+    },
+    "name": "read",
+    "processed_at": "2026-06-01T14:46:59.186062Z",
+    "type": "agent.tool_use"
+  },
+  {
+    "id": "sevt_01VpvFA6teEdmyd1wrLtamuL",
+    "is_error": false,
+    "model_request_start_id": "sevt_016TpBxoxdwbcdcyp8kwQzi1",
+    "model_usage": {
+      "cache_creation_input_tokens": 2695,
+      "cache_read_input_tokens": 3382,
+      "input_tokens": 3,
+      "output_tokens": 115
+    },
+    "processed_at": "2026-06-01T14:46:59.186063Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "content": [
+      {
+        "text": "awk: cannot open \"/uploads/Section 2_ Fundamentals of Security.md\" (No such file or directory)\n",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_011Yf58xzCcxyE6c7vviWe2V",
+    "is_error": true,
+    "processed_at": "2026-06-01T14:46:59.917324Z",
+    "tool_use_id": "sevt_01G2Gst5P1c88RNM25FRWMJW",
+    "type": "agent.tool_result"
+  },
+  {
+    "id": "sevt_01Gw9otFLLaKbS96t87GMauH",
+    "processed_at": "2026-06-01T14:47:02.306774Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "evaluated_permission": "allow",
+    "id": "sevt_012xWJjNgCGDP2bwNhdqkkbx",
+    "input": {
+      "command": "ls /uploads/ 2>/dev/null || ls /mnt/session/uploads/ 2>/dev/null"
+    },
+    "name": "bash",
+    "processed_at": "2026-06-01T14:47:02.306775Z",
+    "type": "agent.tool_use"
+  },
+  {
+    "id": "sevt_01XQPAcm9DYR24KvfeTzJsFp",
+    "is_error": false,
+    "model_request_start_id": "sevt_01Gw9otFLLaKbS96t87GMauH",
+    "model_usage": {
+      "cache_creation_input_tokens": 165,
+      "cache_read_input_tokens": 6077,
+      "input_tokens": 1,
+      "output_tokens": 76
+    },
+    "processed_at": "2026-06-01T14:47:02.306776Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "content": [
+      {
+        "text": "Section 1_ Introduction.md\nSection 2_ Fundamentals of Security.md\nSection 3_ Threat Actors.md\nSection 4_ Physical Security.md\nSection 5_ Social Engineering.md\nSection 6_ Malware.md\nSection 7_ Data Protection.md\nSection 8_ Cryptographic Solutions.md\n",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_018TN2f6AxjwbQipg6Xykxzo",
+    "is_error": false,
+    "processed_at": "2026-06-01T14:47:03.526482Z",
+    "tool_use_id": "sevt_012xWJjNgCGDP2bwNhdqkkbx",
+    "type": "agent.tool_result"
+  },
+  {
+    "id": "sevt_012Pkenb9PwJZoYw1QuxPiBv",
+    "processed_at": "2026-06-01T14:47:05.362352Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "evaluated_permission": "allow",
+    "id": "sevt_015etjjwRowkRvR2tnsAej4B",
+    "input": {
+      "file_path": "/mnt/session/uploads/Section 2_ Fundamentals of Security.md"
+    },
+    "name": "read",
+    "processed_at": "2026-06-01T14:47:05.362353Z",
+    "type": "agent.tool_use"
+  },
+  {
+    "id": "sevt_01M7UYM5KFGSMAWu6KZhDB5G",
+    "is_error": false,
+    "model_request_start_id": "sevt_012Pkenb9PwJZoYw1QuxPiBv",
+    "model_usage": {
+      "cache_creation_input_tokens": 167,
+      "cache_read_input_tokens": 6242,
+      "input_tokens": 1,
+      "output_tokens": 71
+    },
+    "processed_at": "2026-06-01T14:47:05.362354Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "content": [
+      {
+        "text": "1\t# Fundamentals of Security\n2\t\n3\t## Objectives\n4\t- 1.1 - Compare and contrast various security controls\n5\t- 1.2 - Summarize fundamental security concepts\n6\t\n7\t## Table of Contents\n8\t\n9\t1. [Fundamentals of Security](#fundamentals-of-security)\n10\t2. [Threats and Vulnerabilities](#threats-and-vulnerabilities)\n11\t3. [Confidentiality](#confidentiality)\n12\t4. [Integrity](#integrity)\n13\t5. [Availability](#availability)\n14\t6. [Non-repudiation](#non-repudiation-1)\n15\t7. [Authentication](#authentication)\n16\t8. [Authorization](#authorization)\n17\t9. [Accounting](#accounting)\n18\t10. [Security Control Categories](#security-control-categories-1)\n19\t11. [Security Control Types](#security-control-types-1)\n20\t12. [Gap Analysis](#gap-analysis)\n21\t13. [Zero Trust](#zero-trust)\n22\t\n23\t\n24\t## Fundamentals of Security\n25\t- **Information Security**: Protecting data and information from unauthorized access, modification, disruption, disclosure, and destruction\n26\t- **Information Systems Security**: Protecting the systems (e.g., computers, servers, network devices) that hold and process critical data\n27\t\n28\t## CIA Triad\n29\t- **Confidentiality**: Ensures information is accessible only to authorized personnel (e.g., encryption)\n30\t- **Integrity**: Ensures data remains accurate and unaltered (e.g., checksums)\n31\t- **Availability**: Ensures information and resources are accessible when needed (e.g., redundancy measures)\n32\t\n33\t## Non-Repudiation\n34\t- Guarantees that an action or event cannot be denied by the involved parties (e.g., digital signatures)\n35\t\n36\t## CIANA Pentagon\n37\t- An extension of the CIA triad with the addition of non-repudiation and authentication\n38\t\n39\t## Triple A’s of Security\n40\t- **Authentication**: Verifying the identity of a user or system (e.g., password checks)\n41\t- **Authorization**: Determining actions or resources an authenticated user can access (e.g., permissions)\n42\t- **Accounting**: Tracking user activities and resource usage for audit or billing purposes\n43\t\n44\t## Security Control Categories\n45\t- Technical, Managerial, Operational, Physical\n46\t\n47\t## Security Control Types\n48\t- Preventative, Deterrent, Detective, Corrective, Compensating, Directive\n49\t\n50\t## Zero Trust Model\n51\t- Operates on the principle that no one should be trusted by default\n52\t- To achieve zero trust, we use the control plane and the data plane\n53\t  - **Control Plane**: Adaptive identity, threat scope reduction, policy-driven access control, and secured zones\n54\t  - **Data Plane**: Subject/system, policy engine, policy administrator, and establishing policy enforcement points\n55\t\n56\t----------------\n57\t\n58\t## Threats and Vulnerabilities\n59\t\n60\t- **Threat:** Anything that could cause harm, loss, damage, or compromise to our information technology systems, including natural disasters, cyber-attacks, data integrity breaches, and disclosure of confidential information.\n61\t\n62\t- **Vulnerability:** Any weakness in the system design or implementation, originating from internal factors such as software bugs, misconfigured software, improperly protected network devices, missing security patches, and lack of physical security.\n63\t\n64\t  - Where threats and vulnerabilities intersect, that is where the risk to your enterprise systems and networks lies. If you have a threat but there is no matching vulnerability to it, then you have no risk. Similarly, if you have a vulnerability but there’s no threat against it, there would be no risk.\n65\t\n66\t- **Risk Management:** Finding different ways to minimize the likelihood of an outcome and achieve the desired outcome.\n67\t\n68\t## Confidentiality\n69\t\n70\t- **Confidentiality:** Refers to the protection of information from unauthorized access and disclosure, ensuring that private or sensitive information is not available or disclosed to unauthorized individuals, entities, or processes.\n71\t\n72\t  - Confidentiality is important for three main reasons: to protect personal privacy, to maintain a business advantage, and to achieve regulatory compliance.\n73\t\n74\t  - To ensure confidentiality, we use five basic methods:\n75\t    - **Encryption:** Process of converting data into a code to prevent unauthorized access.\n76\t    - **Access Controls:** By setting up strong user permissions, you ensure that only authorized personnel can access certain types of data.\n77\t    - **Data Masking:** Method that involves obscuring specific data within a database to make it inaccessible for unauthorized users while retaining the real data's authenticity and use for authorized users.\n78\t    - **Physical Security Measures:** Ensure confidentiality for both physical types of data, such as paper records stored in a filing cabinet, and for digital information contained on servers and workstations.\n79\t    - **Training and Awareness:** Conduct regular training on the security awareness best practices that employees can use to protect their organization’s sensitive data.\n80\t\n81\t\n82\t## Integrity\n83\t\n84\t- **Integrity**: Helps ensure that information and data remain accurate and unchanged from its original state unless intentionally modified by an authorized individual\n85\t    - Verifies the accuracy and trustworthiness of data over the entire lifecycle\n86\t  - Integrity is important for three main reasons:\n87\t    - To ensure data accuracy\n88\t    - To maintain trust\n89\t    - To ensure system operability\n90\t  - To help us maintain the integrity of our data, systems, and networks, we usually utilize five methods:\n91\t    - **Hashing**: Process of converting data into a fixed-size value\n92\t    - **Digital Signatures**: Ensure both integrity and authenticity\n93\t    - **Checksums**: Method to verify the integrity of data during transmission\n94\t    - **Access Controls**: Ensure that only authorized individuals can modify data and this reduces the risk of unintentional or malicious alterations\n95\t    - **Regular Audits**: Involve systematically reviewing logs and operations to ensure that only authorized changes have been made, and any discrepancies are immediately addressed\n96\t\n97\t--------- \n98\t\n99\t## Availability\n100\t\n101\t- **Availability:** Ensure that information, systems, and resources are accessible and operational when needed by authorized users. As cybersecurity professionals, we value availability since it can help us with ensuring business continuity, maintaining customer trust, and upholding an organization's reputation. To overcome the challenges associated with maintaining availability, the best strategy is to use redundancy in your systems and network designs.\n102\t\n103\t- **Redundancy:** Duplication of critical components or functions of a system with the intention of enhancing its reliability.\n104\t\n105\t- There are various types of redundancy you need to consider when designing your systems and networks:\n106\t    - **Server Redundancy:** Involves using multiple servers in a load balanced or failover configuration so that if one is overloaded or fails, the other servers can take over the load to continue supporting your end users.\n107\t    - **Data Redundancy:** Involves storing data in multiple places.\n108\t    - **Network Redundancy:** Ensures that if one network path fails, the data can travel through another route.\n109\t    - **Power Redundancy:** Involves using backup power sources, like generators and UPS systems.\n110\t\n111\t## Non-repudiation\n112\t\n113\t- **Non-repudiation:** Focused on providing undeniable proof in the world of digital transactions. Security measure that ensures individuals or entities involved in a communication or transaction cannot deny their participation or the authenticity of their actions.\n114\t\n115\t    - **Digital Signatures:** Considered to be unique to each user who is operating within the digital domain. Created by first hashing a particular message or communication that you want to digitally sign, and then it encrypts that hash digest with the user’s private key using asymmetric encryption.\n116\t\n117\t- Non-repudiation is important for three main reasons: to confirm the authenticity of digital transactions, to ensure the integrity of critical communications, and to provide accountability in digital processes.\n118\t\n119\t## Authentication\n120\t\n121\t- **Authentication:** Security measure that ensures individuals or entities are who they claim to be during a communication or transaction.\n122\t    - 5 commonly used authentication methods:\n123\t        - **Something you know (Knowledge Factor):** Relies on information that a user can recall.\n124\t        - **Something you have (Possession Factor):** Relies on the user presenting a physical item to authenticate themselves.\n125\t        - **Something you are (Inherence Factor):** Relies on the user providing a unique physical or behavioral characteristic of the person to validate that they are who they claim to be.\n126\t        - **Something you do (Action Factor):** Relies on the user conducting a unique action to prove who they are.\n127\t        - **Somewhere you are (Location Factor):** Relies on the user being in a certain geographic location before access is granted.\n128\t\n129\t    - **Multi-Factor Authentication System (MFA):** Security process that requires users to provide multiple methods of identification to verify their identity.\n130\t\n131\t- Authentication is critical to understand because of the following: to prevent unauthorized access, to protect user data and privacy, and to ensure that resources are accessed by valid users only.\n132\t\n133\t\n134\t## Authorization\n135\t\n136\t- **Authorization:** Pertains to the permissions and privileges granted to users or entities after they have been authenticated. Authorization mechanisms are important to help us with protecting sensitive data, maintain system integrity in our organizations, and create a more streamlined user experience.\n137\t\n138\t## Accounting\n139\t\n140\t- **Accounting:** Security measure that ensures all user activities during a communication or transaction are properly tracked and recorded. Your organization should use a robust accounting system so that you can create an audit trail, maintain regulatory compliance, conduct forensic analysis, perform resource optimization, and achieve user accountability.\n141\t\n142\t    - To perform accounting, we usually use different technologies like the following:\n143\t        - **Syslog Servers:** Used to aggregate logs from various network devices and systems so that system administrators can analyze them to detect patterns or anomalies in the organization’s systems.\n144\t        - **Network Analysis Tools:** Used to capture and analyze network traffic so that network administrators can gain detailed insights into all the data moving within a network.\n145\t        - **Security Information and Event Management (SIEM) Systems:** Provides us with real-time analysis of security alerts generated by various hardware and software infrastructure in an organization.\n146\t\n147\t## Security Control Categories\n148\t\n149\t-   4 Broad Categories of Security Controls:\n150\t    -   **Technical Controls**: Technologies, hardware, and software mechanisms that are implemented to manage and reduce risks.\n151\t    -   **Managerial Controls**: Sometimes also referred to as administrative controls, involve the strategic planning and governance side of security.\n152\t    -   **Operational Controls**: Procedures and measures that are designed to protect data on a day-to-day basis, mainly governed by internal processes and human actions.\n153\t    -   **Physical Controls**: Tangible, real-world measures taken to protect assets.\n154\t\n155\t## Security Control Types\n156\t\n157\t-   6 Basic Types of Security Controls:\n158\t    -   **Preventive Controls**: Proactive measures implemented to thwart potential security threats or breaches.\n159\t    -   **Deterrent Controls**: Discourage potential attackers by making the effort seem less appealing or more challenging.\n160\t    -   **Detective Controls**: Monitor and alert organizations to malicious activities as they occur or shortly thereafter.\n161\t    -   **Corrective Controls**: Mitigate any potential damage and restore our systems to their normal state.\n162\t    -   **Compensating Controls**: Alternative measures that are implemented when primary security controls are not feasible or effective.\n163\t    -   **Directive Controls**: Guide, inform, or mandate actions, often rooted in policy or documentation and set the standards for behavior within an organization.\n164\t\n165\t## Gap Analysis\n166\t\n167\t- **Gap Analysis:** Process of evaluating the differences between an organization's current performance and its desired performance. Conducting a gap analysis can be a valuable tool for organizations looking to improve their operations, processes, performance, or overall security posture. There are several steps involved in conducting a gap analysis: Define the scope of the analysis, Gather data on the current state of the organization, Analyze the data to identify any areas where the organization's current performance falls short of its desired performance, Develop a plan to bridge the gap.\n168\t\n169\t- **2 Basic Types of Gap Analysis:**\n170\t    1. Technical Gap Analysis: Involves evaluating an organization's current technical infrastructure, identifying any areas where it falls short of the technical capabilities required to fully utilize their security solutions.\n171\t    2. Business Gap Analysis: Involves evaluating an organization's current business processes, identifying any areas where they fall short of the capabilities required to fully utilize cloud-based solutions.\n172\t\n173\t- **Plan of Action and Milestones (POA&M):**\n174\t    - Outlines the specific measures to address each vulnerability.\n175\t    - Allocate resources.\n176\t    - Set up timelines for each remediation task that is needed.\n177\t\n178\t## Zero Trust\n179\t\n180\t- **Zero Trust:** Demands verification for every device, user, and transaction within the network, regardless of its origin. To create a zero trust architecture, we need to use two different planes:\n181\t    1. Control Plane: Refers to the overarching framework and set of components responsible for defining, managing, and enforcing the policies related to user and system access within an organization. It typically encompasses several key elements: Adaptive Identity (Relies on real-time validation that takes into account the user's behavior, device, location, and more).\n182\t    2. Data Plane:\n183\t        - **Threat Scope Reduction:** Limits the users’ access to only what they need for their work tasks because this reduces the network’s potential attack surface. Focused on minimizing the \"blast radius\" that could occur in the event of a breach.\n184\t        - **Policy-Driven Access Control:** Entails developing, managing, and enforcing user access policies based on their roles and responsibilities.\n185\t        - **Secured Zones:** Isolated environments within a network that are designed to house sensitive data. Ensures the policies are properly executed.\n186\t    - Data plane consists of the following:\n187\t        - **Subject/System:** Refers to the individual or entity attempting to gain access.\n188\t        - **Policy Engine:** Cross-references the access request with its predefined policies.\n189\t        - **Policy Administrator:** Used to establish and manage the access policies.\n190\t        - **Policy Enforcement Point:** Where the decision to grant or deny access is actually executed.\n191\t\n192\t\n",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01QB2UPkEVxMxY2scSTehAzj",
+    "is_error": false,
+    "processed_at": "2026-06-01T14:47:09.459199Z",
+    "tool_use_id": "sevt_015etjjwRowkRvR2tnsAej4B",
+    "type": "agent.tool_result"
+  },
+  {
+    "id": "sevt_01JMkh5LLEoZCYr1byij5NDS",
+    "processed_at": "2026-06-01T14:47:19.024142Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "content": [
+      {
+        "text": "Great question! Here's a full breakdown based on your official study notes:\n\n---\n\n## 🔐 The CIA Triad\n\nThe CIA Triad is the **foundational model of information security**, consisting of three core principles:\n\n| Pillar | One-Sentence Definition | Real-World Example |\n|---|---|---|\n| **Confidentiality** | Ensures information is accessible only to authorized personnel | Encrypting a database so only authorized users can read sensitive records |\n| **Integrity** | Ensures data remains accurate and unaltered unless changed by an authorized user | Using a checksum or hash to verify a downloaded file hasn't been tampered with |\n| **Availability** | Ensures information and systems are accessible when needed by authorized users | Using redundant servers and backup power (UPS) so a website stays online during hardware failure |\n\n---\n\n## 📌 SY0-701 Objective\n\nThe CIA Triad falls under:\n\n> **Domain 1.0 – General Security Concepts**\n> **Objective 1.2 – Summarize fundamental security concepts**\n\n---\n\n## 💡 Bonus: Beyond the CIA Triad\n\nYour study notes also reference two extensions worth knowing for the exam:\n\n- **Non-Repudiation** — Provides undeniable proof of actions (e.g., digital signatures). Added to the CIA Triad to form the **CIANA Pentagon**.\n- **AAA (Triple A's)** — **Authentication, Authorization, and Accounting** — also covered under Objective 1.2.\n\n---\n\nWould you like a **practice question** on the CIA Triad, or would you like to explore any one of the three pillars in more depth?",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_012m7p2Tdx11NVBmALmqgXvL",
+    "processed_at": "2026-06-01T14:47:19.024143Z",
+    "type": "agent.message"
+  },
+  {
+    "id": "sevt_01JYN4rGUCZroKBmsxfD8Kmt",
+    "is_error": false,
+    "model_request_start_id": "sevt_01JMkh5LLEoZCYr1byij5NDS",
+    "model_usage": {
+      "cache_creation_input_tokens": 3593,
+      "cache_read_input_tokens": 6409,
+      "input_tokens": 1,
+      "output_tokens": 389
+    },
+    "processed_at": "2026-06-01T14:47:19.024144Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "agent_name": "web-secplus-bot",
+    "id": "sevt_01KeKCnhRUp8iih1V58uLw12",
+    "processed_at": "2026-06-01T14:47:19.223343Z",
+    "session_thread_id": "sthr_017kSwEmuGQniahrtpDx5qM7",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.thread_status_idle"
+  },
+  {
+    "id": "sevt_016YcYASDYAysNHcAez9NhJV",
+    "processed_at": "2026-06-01T14:47:19.223344Z",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.status_idle"
+  },
+  {
+    "id": "sevt_01Ug53xVHQEqZe9Ferhjhzis",
+    "processed_at": "2026-06-01T14:47:36.507545Z",
+    "type": "session.status_running"
+  },
+  {
+    "agent_name": "web-secplus-bot",
+    "id": "sevt_015zWZ7UXDHhjGirWMtCCxHx",
+    "processed_at": "2026-06-01T14:47:36.507546Z",
+    "session_thread_id": "sthr_017kSwEmuGQniahrtpDx5qM7",
+    "type": "session.thread_status_running"
+  },
+  {
+    "content": [
+      {
+        "text": "What are the requirements to pass the CISSP exam?",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01BRzuRdU2zS9wSpstcxTpjJ",
+    "processed_at": "2026-06-01T14:47:43.038691Z",
+    "type": "user.message"
+  },
+  {
+    "id": "sevt_017PMkrpbi5dZiE1rx1hKzYH",
+    "processed_at": "2026-06-01T14:47:43.038692Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "id": "sevt_01XVaDopHF77dkqm6GzgohAW",
+    "processed_at": "2026-06-01T14:47:43.038693Z",
+    "type": "agent.thinking"
+  },
+  {
+    "content": [
+      {
+        "text": "That's outside my scope! I'm **SecPlus-Bot**, and I'm specifically designed to help students at Fayetteville Technical Community College prepare for the **CompTIA Security+ SY0-701** exam only.\n\nI'm not able to provide information on other certifications like the CISSP.\n\n---\n\nHere's what I **can** help you with:\n\n- 📚 **Concept explanations** tied to the 5 SY0-701 domains\n- ✅ **Practice questions** to test your knowledge\n- 🗺️ **Domain breakdowns** so you know what to focus on\n- 📝 **Performance summaries** to track your study progress\n\n---\n\nWould you like to get back to your Security+ prep? For example, I can:\n- Give you a **practice question** on any topic\n- Explain a concept from any of the **5 exam domains**\n- Review a specific objective like **threats, cryptography, or security controls**",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01SN3QgnUxzR9zr181nwv74p",
+    "processed_at": "2026-06-01T14:47:43.038695Z",
+    "type": "agent.message"
+  },
+  {
+    "id": "sevt_01RkAYga99tRZ6MHrgRHYtE6",
+    "is_error": false,
+    "model_request_start_id": "sevt_017PMkrpbi5dZiE1rx1hKzYH",
+    "model_usage": {
+      "cache_creation_input_tokens": 402,
+      "cache_read_input_tokens": 10002,
+      "input_tokens": 3,
+      "output_tokens": 289
+    },
+    "processed_at": "2026-06-01T14:47:43.038696Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "agent_name": "web-secplus-bot",
+    "id": "sevt_01TTGEQUHn6NgRdACFvWbEg6",
+    "processed_at": "2026-06-01T14:47:43.239825Z",
+    "session_thread_id": "sthr_017kSwEmuGQniahrtpDx5qM7",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.thread_status_idle"
+  },
+  {
+    "id": "sevt_01SPxMnngtDCP9Bfi8u24XHA",
+    "processed_at": "2026-06-01T14:47:43.239826Z",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.status_idle"
+  },
+  {
+    "id": "sevt_01BKzuRZzuSLG66ndScFAQUD",
+    "processed_at": "2026-06-01T14:48:06.971893Z",
+    "type": "session.status_running"
+  },
+  {
+    "agent_name": "web-secplus-bot",
+    "id": "sevt_01BTjRsiDVS1yvG94xM6DUg7",
+    "processed_at": "2026-06-01T14:48:06.971894Z",
+    "session_thread_id": "sthr_017kSwEmuGQniahrtpDx5qM7",
+    "type": "session.thread_status_running"
+  },
+  {
+    "content": [
+      {
+        "text": "What is the difference between a threat vector and an attack vector when it comes to ransomware?",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01CKWsmGAPrkuYjHERd6EEbv",
+    "processed_at": "2026-06-01T14:48:11.185104Z",
+    "type": "user.message"
+  },
+  {
+    "id": "sevt_01B3NBpv3Mis9KPJCzJV9kb8",
+    "processed_at": "2026-06-01T14:48:11.185105Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "id": "sevt_01EiSCE9jdcbFM1sFvhbmjKL",
+    "processed_at": "2026-06-01T14:48:11.185106Z",
+    "type": "agent.thinking"
+  },
+  {
+    "content": [
+      {
+        "text": "Great exam topic! Let me pull up the relevant study notes for you.",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01RYvDzp8zufquEWtd1MqRqZ",
+    "processed_at": "2026-06-01T14:48:11.185108Z",
+    "type": "agent.message"
+  },
+  {
+    "evaluated_permission": "allow",
+    "id": "sevt_01UUUAPVz9vcv5iQCriVwcrq",
+    "input": {
+      "file_path": "/mnt/session/uploads/Section 3_ Threat Actors.md"
+    },
+    "name": "read",
+    "processed_at": "2026-06-01T14:48:11.185109Z",
+    "type": "agent.tool_use"
+  },
+  {
+    "evaluated_permission": "allow",
+    "id": "sevt_01D9G4j7y8JLQaqtvUdpj38w",
+    "input": {
+      "file_path": "/mnt/session/uploads/Section 6_ Malware.md"
+    },
+    "name": "read",
+    "processed_at": "2026-06-01T14:48:11.185110Z",
+    "type": "agent.tool_use"
+  },
+  {
+    "id": "sevt_0171vabs5Y8bA5cWAGrmy2wj",
+    "is_error": false,
+    "model_request_start_id": "sevt_01B3NBpv3Mis9KPJCzJV9kb8",
+    "model_usage": {
+      "cache_creation_input_tokens": 312,
+      "cache_read_input_tokens": 10404,
+      "input_tokens": 3,
+      "output_tokens": 217
+    },
+    "processed_at": "2026-06-01T14:48:11.185111Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "content": [
+      {
+        "text": "1\t# Threat Actors\n2\t\n3\tThis document outlines different types of threat actors, their motivations, attributes, and common attack vectors.\n4\t\n5\t## Table of Contents\n6\t\n7\t1. [Threat Actors](#threat-actors)\n8\t   - [Threat Actor Motivations](#threat-actor-motivations)\n9\t   - [Threat Actor Attributes](#threat-actor-attributes)\n10\t2. [Types of Threat Actors](#types-of-threat-actors)\n11\t   - [Unskilled Attackers](#unskilled-attackers)\n12\t   - [Hacktivists](#hacktivists)\n13\t   - [Organized Crime](#organized-crime)\n14\t   - [Nation-state Actor](#nation-state-actor)\n15\t   - [Insider Threats](#insider-threats)\n16\t   - [Shadow IT](#shadow-it) \n17\t3. [Threat Vectors and Attack Surfaces](#threat-vectors-and-attack-surfaces)\n18\t4. [Deception and Disruption Technologies](#deception-and-disruption-technologies)\n19\t5. [Outsmarting Threat Actors](#outsmarting-threat-actors)\n20\t\n21\t--------\n22\t\n23\t## Threat Actor Motivations\n24\t\n25\t- Data Exfiltration, Blackmail, Espionage, Service Disruption, Financial Gain, Philosophical/Political Beliefs, Ethical Reasons, Revenge, Disruption/Chaos, War\n26\t\n27\t## Threat Actor Attributes\n28\t\n29\t- Internal vs. External Threat Actors\n30\t- Differences in resources and funding,\n31\t- Level of sophistication\n32\t\n33\t## Types of Threat Actors\n34\t\n35\t- **Unskilled Attackers:** Limited technical expertise, use readily available tools\n36\t- **Hacktivists:** Driven by political, social, or environmental ideologies\n37\t- **Organized Crime:** Execute cyberattacks for financial gain (e.g., ransomware, identity theft)\n38\t- **Nation-state Actor:** Highly skilled attackers sponsored by governments for cyber espionage or warfare\n39\t- **Insider Threats:** Security threats originating from within the organization\n40\t- **Shadow IT:** IT systems, devices, software, or services managed without explicit organizational approval\n41\t\n42\t## Threat Vectors and Attack Surfaces\n43\t\n44\t- Message-based, Image-based, File-based, Voice Calls, Removable Devices, Unsecured Networks\n45\t\n46\t## Deception and Disruption Technologies\n47\t\n48\t- **Honeypots:** Decoy systems to attract and deceive attackers\n49\t- **Honeynets:** Network of decoy systems for observing complex attacks\n50\t- **Honeyfiles:** Decoy files to detect unauthorized access or data breaches\n51\t- **Honeytokens:** Fake data to alert administrators when accessed or used\n52\t\n53\t## Threat Actor Motivations\n54\t\n55\t- **Threat Actors Intent**: Specific objective or goal that a threat actor is aiming to achieve through their attack\n56\t- **Threat Actors Motivation**: Underlying reasons or driving forces that pushes a threat actor to carry out their attack\n57\t\n58\t- Different motivations behind threat actors:\n59\t    - **Data Exfiltration**: Unauthorized transfer of data from a computer\n60\t    - **Financial Gain**: Achieved through various means, such as ransomware attacks, or through banking trojans that allow them to steal financial information in order to gain unauthorized access into the victims' bank accounts\n61\t    - **Blackmail**: The attacker obtains sensitive or compromising information about an individual or an organization and threatens to release this information to the public unless certain demands are met\n62\t    - **Service Disruption**: Some threat actors aim to disrupt the services of various organizations, either to cause chaos, make a political statement, or to demand a ransom\n63\t    - **Philosophical or Political Beliefs**: Attacks that are conducted due to the philosophical or political beliefs of the attackers is known as hacktivism\n64\t    - **Ethical Reasons**: Contrary to malicious threat actors, ethical hackers, also known as Authorized hackers, are motivated by a desire to improve security\n65\t    - **Revenge**: It can also be a motivation for a threat actor that wants to target an entity that they believe has wronged them in some way\n66\t    - **Disruption or Chaos**: Creating and spreading malware to launching sophisticated cyberattacks against the critical infrastructure in a populated city\n67\t    - **Espionage**: Spying on individuals, organizations, or nations to gather sensitive or classified information\n68\t    - **War**: Cyber warfare can be used to disrupt a country's infrastructure, compromise its national security, and to cause economic damage\n69\t\n70\t## Threat Actor Attributes\n71\t\n72\t- **2 Most Basic Attributes of a Threat Actor:**\n73\t    - **Internal Threat Actors**: Individuals or entities within an organization who pose a threat to its security\n74\t    - **External Threat Actors**: Individuals or groups outside an organization who attempt to breach its cybersecurity defenses\n75\t- **Resources and funding available to the specific threat actor:**\n76\t    - Tools, skills, and personnel at the disposal of a given threat actor\n77\t- **Level of sophistication and capability of the specific threat actor:**\n78\t    - Refers to their technical skill, the complexity of the tools and techniques they use, and their ability to evade detection and countermeasures\n79\t    - In the world of cybersecurity, we usually classify the lowest-skilled threat actors as \"script kiddies\"\n80\t        - **Script Kiddie**: Individual with limited technical knowledge, uses pre-made software or scripts to exploit computer systems and networks\n81\t    - Nation-state actors, Advanced Persistent Threats, and others have high levels of sophistication and capabilities and possess advanced technical skills, using sophisticated tools and techniques\n82\t\n83\t## Unskilled Attackers\n84\t\n85\t- **Unskilled Attacker(Script Kiddie)**: Individual who lacks the technical knowledge to develop their own hacking tools or exploits\n86\t    - These low-skilled threat actors need to rely on scripts and programs that have been developed by others\n87\t- How do these unskilled attackers cause damage?\n88\t    - One way is to launch a DDoS attack\n89\t- An unskilled attacker can simply enter in the IP address of the system they want to target, and then click a button to launch an attacker against that target\n90\t\n91\t## Hacktivists\n92\t\n93\t- **Hacktivists**: Individuals or groups that use their technical skills to promote a cause or drive social change instead of for personal gain\n94\t- **Hacktivism**: Activities in which the use of hacking and other cyber techniques is used to promote or advance a political or social cause\n95\t  - To accomplish their objectives, hacktivists use a wide range of techniques to achieve their goals, including:\n96\t     - **Website Defacement**: Form of electronic graffiti and is usually treated as an act of vandalism\n97\t     - **Distributed Denial of Service (DDoS) Attacks**: Attempting to overwhelm the victim's systems or networks so that they cannot be accessed by the organization's legitimate users\n98\t     - **Doxing**: Involves the public release of private information about an individual or organization\n99\t     - **Leaking of Sensitive Data**: Releasing sensitive data to the public at large over the internet\n100\t  - Hacktivists are primarily motivated by their ideological beliefs rather than trying to achieve financial gains\n101\t  - One of the most well-known hacktivist groups is known as “Anonymous”, a loosely affiliated collective that has been involved in numerous high-profile attacks over the years for targeting organizations that they perceive as acting unethically or against the public interest at large\n102\t\n103\t## Organized Crime\n104\t\n105\t- Organized cybercrime groups are groups or syndicates that have banded together to conduct criminal activities in the digital world\n106\t    - Sophisticated and well-structured, they use resources and technical skills for illicit gain\n107\t    - In terms of their technical capabilities, organized crime groups possess a very high level of technical capability and they often employ advanced hacking techniques and tools such as:\n108\t        - Custom Malware, Ransomware, Sophisticated Phishing Campaigns\n109\t    - These criminal groups will engage in a variety of illicit activities to generate revenue for their members, including:\n110\t        - Data Breaches, Identity Theft, Online Fraud, Ransomware Attacks\n111\t    - Unlike hacktivists or nation-state actors, organized cybercrime groups are not typically driven by ideological or political objectives\n112\t        - These groups may be hired by other entities, including governments, to conduct cyber operations and attacks on their behalf\n113\t    - Money, not other motivations, is the objective of their attacks even if the attack takes place in the political sphere\n114\t\n115\t## Nation-state Actor\n116\t\n117\t- **Nation-state Actor**: Groups or individuals that are sponsored by a government to conduct cyber operations against other nations, organizations, or individuals\n118\t    - Sometimes, these threat actors attempt what is known as a false flag attack\n119\t    - **False Flag Attack**: Attack that is orchestrated in such a way that it appears to originate from a different source or group than the actual perpetrators, with the intent to mislead investigators and attribute the attack to someone else\n120\t    - Nation-state actors possess advanced technical skills and extensive resources, and they are capable of conducting complex, coordinated cyber operations that employ a variety of techniques such as:\n121\t        - Creating custom malware, Using zero-day exploits, Becoming an advanced persistent threats\n122\t- **Advanced Persistent Threat (APT)***: Term that used to be used synonymously with a nation-state actor because of their long-term persistence and stealth\n123\t        - A prolonged and targeted cyberattack in which an intruder gains unauthorized access to a network and remains undetected for an extended period while trying to steal data or monitor network activities rather than cause immediate damage\n124\t        - These advanced persistent threats are often sponsored by a nation-state or its proxies, like organized cybercrime groups\n125\t- What motivates a nation-state actor? Nation-state actors are motivated to achieve their long-term strategic goals, and they are not seeking financial gain\n126\t\n127\t-----------\n128\t## Insider Threats\n129\t\n130\t- **Insider Threats**: Cybersecurity threats that originate from within the organization. Insider threats can take various forms such as Data Theft, Sabotage, or Misuse of access privileges.\n131\t  - Each insider threat is driven by different motivations. Some are driven by financial gain and they want to profit from the sale of sensitive organizational data to others.\n132\t  - Some may be motivated by revenge and are aiming to harm the organization due to some kind of perceived wrong levied against the insider. Some may take action as a result of carelessness or a lack of awareness of cybersecurity best practices.\n133\t  - Insider threat refers to the potential risk posed by individuals within an organization who have access to sensitive information and systems, and who may misuse this access for malicious or unintended purposes.\n134\t  - To mitigate the risk of an insider threat being successful, organizations should implement the following: Zero-trust architecture, employ robust access controls, conduct regular audits, and provide effective employee security awareness programs.\n135\t\n136\t## Shadow IT\n137\t\n138\t- **Shadow IT**: Use of information technology systems, devices, software, applications, and services without explicit organizational approval.\n139\t  - Shadow IT exists because an organization's security posture is set too high or is too complex for business operations to occur without being negatively affected.\n140\t- **Bring Your Own Devices (BYOD)** involves the use of personal devices for work purposes.\n141\t\n142\t## Threat Vectors and Attack Surfaces\n143\t\n144\t- **Threat Vector**: Means or pathway by which an attacker can gain unauthorized access to a computer or network to deliver a malicious payload or carry out an unwanted action.\n145\t- **Attack Surface** encompasses all the various points where an unauthorized user can try to enter data to or extract data from an environment.\n146\t  - It can be minimized by restricting access, removing unnecessary software, and disabling unused protocols.\n147\t  - Think of threat vector as the \"how\" of an attack, whereas the attack surface is the \"where\" of the attack.\n148\t  - There are several different threat vectors that could be used to attack your enterprise networks such as Messages, Images, Files, Voice Calls, Removable Devices, and insecure networks.\n149\t\n150\t    - **Messages**: Message-based threat vectors include threats delivered via email, simple message service (SMS text messaging), or other forms of instant messaging. Phishing campaigns are commonly used as part of a message-based threat vector when an attacker impersonates a trusted entity to trick its victims into revealing their sensitive information to the attacker.\n151\t    - **Images**: Image-based threat vectors involve the embedding of malicious code inside of an image file by the threat actor.\n152\t    - **Files**: The files, often disguised as legitimate documents or software, can be transferred as email attachments, through file-sharing services, or hosted on a malicious website.\n153\t    - **Voice Calls**: *Vhishing* involves the use of voice calls to trick victims into revealing their sensitive information to an attacker.\n154\t    - **Removable Devices**: One common technique used with removable devices is known as baiting. Baiting involves an attacker leaving a malware-infected USB drive in a location where their target might find it, such as in the parking lot or the lobby of the targeted organization.\n155\t    - **Unsecure Networks**: Unsecure networks include wireless, wired, and Bluetooth networks that lack the appropriate security measures to protect these networks. Exploiting vulnerabilities in the Bluetooth protocol, an attacker can carry out their attacks using techniques like the BlueBorne or BlueSmack exploits.\n156\t\n157\t      - **BlueBorne**: Set of vulnerabilities in Bluetooth technology that can allow an attacker to take over devices, spread malware, or even establish an on-path attack to intercept communications without any user interaction.\n158\t      - **BlueSmack**: Type of Denial of Service attack that targets Bluetooth-enabled devices by sending a specially crafted Logical Link Control and Adaptation Protocol packet to a target device.\n159\t------------\n160\t## Outsmarting Threat Actors\n161\t\n162\t- **Tactics, Techniques, and Procedures (TTPs):** Specific methods and patterns of activities or behaviors associated with a particular threat actor or group of threat actors\n163\t\n164\t- **Deceptive and Disruption Technologies:** Technologies designed to mislead, confuse, and divert attackers from critical assets while simultaneously detecting and neutralizing threats\n165\t  - **Honeypots:** Decoy system or network set up to attract potential hackers\n166\t  - **Honeynets:** Network of honeypots to create a more complex system that is designed to mimic an entire network of systems, including servers, routers, and switches\n167\t  - **Honeyfiles:** Decoy file placed within a system to lure in potential attackers\n168\t  - **Honeytokens:** Piece of data or a resource that has no legitimate value or use but is monitored for access or use\n169\t\n170\t- **Some disruption technologies and strategies to help secure our enterprise networks:**\n171\t  - **Bogus DNS entries:** Fake Domain Name System entries introduced into your system's DNS server\n172\t  - **Creating decoy directories:** Fake folders and files placed within a system's storage\n173\t  - **Dynamic page generation:** Effective against automated scraping tools or bots trying to index or steal content from your organization's website\n174\t  - **Use of port triggering to hide services:**\n175\t    - **Port Triggering:** Security mechanism where specific services or ports on a network device remain closed until a specific outbound traffic pattern is detected\n176\t  - **Spoofing fake telemetry data:** When a system detects a network scan is being attempted by an attacker, it can be configured to respond by sending out fake telemetry or network data\n177\t\n178\t\n",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01MAAML55BrbAjkQachR8eAJ",
+    "is_error": false,
+    "processed_at": "2026-06-01T14:48:18.882516Z",
+    "tool_use_id": "sevt_01UUUAPVz9vcv5iQCriVwcrq",
+    "type": "agent.tool_result"
+  },
+  {
+    "content": [
+      {
+        "text": "1\t# Malware\n2\tObjective 2.4: Given a scenario, analyze indicators of malicious activity\n3\t\n4\t## Table of Contents\n5\t\n6\t1. [Malware](#malware)\n7\t2. [Viruses](#viruses)\n8\t3. [Worms](#worms)\n9\t4. [Trojans](#trojans)\n10\t5. [Ransomware](#ransomware)\n11\t6. [Zombies and Botnets](#zombies-and-botnets)\n12\t7. [Rootkits](#rootkits)\n13\t8. [Backdoors and Logic Bombs](#backdoors-and-logic-bombs)\n14\t9. [Keylogger](#keylogger)\n15\t10. [Spyware and Bloatware](#spyware-and-bloatware)\n16\t11. [Malware Attack Techniques](#malware-attack-techniques)\n17\t12. [9 Common Indicators of Malware Attacks](#9-common-indicators-of-malware-attacks)\n18\t\n19\t\n20\t## Malware\n21\tMalicious software designed to infiltrate computer systems and potentially damage them without user consent.  \n22\t- Categories:\n23\t  - Viruses\n24\t  - Worms\n25\t  - Trojans\n26\t  - Ransomware\n27\t  - Spyware\n28\t  - Rootkits\n29\t  - Spam\n30\t    \n31\t### **Threat Vector vs. Attack Vector**:\n32\t  - *Threat Vector*: Method used to infiltrate a victim's machine. Examples include unpatched software, USB drive installation, and phishing campaigns.\n33\t  - *Attack Vector*: Means by which the attacker gains access and infects the system. Combines both infiltration method and infection process.\n34\t\n35\t### **Types of Malware Attacks**:\n36\t**Viruses**: Attach to clean files, spread, and corrupt host files.\n37\t  - **Worms**: Standalone programs replicating and spreading to other computers.\n38\t  - **Trojans**: Disguise as legitimate software, grant unauthorized access.\n39\t  - **Ransomware**: Encrypts user data, demands ransom for decryption.\n40\t  - **Zombies and Botnets**: Compromised computers remotely controlled in a network for malicious purposes.\n41\t  - **Rootkits**: Hide presence and activities on a computer, operate at the OS level.\n42\t  - **Backdoors and Logic Bombs**: Backdoors allow unauthorized access, logic bombs execute malicious actions.\n43\t  - **Keyloggers**: Record keystrokes, capture passwords or sensitive information.\n44\t  - **Spyware and Bloatware**: Spyware monitors and gathers user/system information, bloatware consumes resources without value.\n45\t  - **Malware Techniques and Infection Vectors**: Evolving from file-based tactics to modern fileless techniques. Multi-stage deployment, leveraging system tools, and obfuscation techniques.\n46\t\n47\t### **Indications of Malware Attack**: Recognizing signs like the following:\n48\t    - Account lockouts\n49\t    - Concurrent session utilization\n50\t    - Blocked content\n51\t    - Impossible travel\n52\t    - Resource consumption\n53\t    - Inaccessibility\n54\t    - Out-of-cycle logging\n55\t    - Missing logs\n56\t    - Documented attacks\n57\t\n58\t## Viruses\n59\t\n60\t**Computer Virus**: Made up of malicious code that's run on a machine without the user's knowledge, infecting the computer whenever it's run.\n61\t#### **10 Different Types of Viruses**:\n62\t- **Boot Sector**: Stored in the first sector of a hard drive, loaded into memory during boot.\n63\t- **Macro**: Embedded inside another document to execute when opened by the user.\n64\t- **Program**: Infect executables or application files with malicious code.\n65\t- **Multipartite**: Combination of a boot sector virus and a program virus.\n66\t- **Encrypted**: Hides itself by encrypting its code.\n67\t- **Polymorphic**: Changes its code to evade detection.\n68\t- **Metamorphic**: Rewrites itself entirely before infecting a file.\n69\t- **Stealth**: Prevents detection by antivirus software.\n70\t- **Armored**: Has protection layers to confuse analysis.\n71\t- **Hoax**: Attempts to scare users into undesirable actions.\n72\t\n73\t## Worms\n74\t**Worm**: Malicious software that can replicate itself without user interaction, spreading throughout a network.\n75\t- Worms are dangerous as they:\n76\t  - Infect workstations and other computing assets.\n77\t  - Disrupt normal network traffic by constantly replicating and spreading.\n78\t\n79\t## Trojans\n80\t**Trojan**: Disguised as harmless software, it performs malicious activities when executed.\n81\t- *Remote Access Trojan (RAT)*: Provides remote control of victim machines, commonly used for data exfiltration and maintaining persistence.\n82\t\n83\t## Ransomware\n84\t**Ransomware**: Blocks access to computer systems or data by encrypting it until a ransom is paid.\n85\t#### **Protection Measures**:\n86\t  - Regular backups\n87\t  - Software updates\n88\t  - Security awareness training\n89\t  - Multi-Factor Authentication (MFA)\n90\t#### **Actions if Affected**:\n91\t- Never pay the ransom.\n92\t- Disconnect infected machines from the network.\n93\t- Notify authorities.\n94\t- Restore data and systems from known good backups.\n95\t\n96\t## Zombies and Botnets\n97\t- **Botnet**: Network of compromised computers or devices controlled remotely by malicious actors.\n98\t- **Zombie**: Name of a compromised computer or device that is part of a botnet, used to perform tasks using remote commands from the attacker without the user's knowledge.\n99\t- *Command and Control Node*: Computer responsible for managing and coordinating the activities of other nodes or devices within a network.\n100\t- Botnets are used:\n101\t  - As pivot points.\n102\t  - To disguise the real attacker.\n103\t  - To host illegal activities.\n104\t  - To spam others by sending out phishing campaigns and other malware.\n105\t- Most common use for a botnet is to conduct a DDoS (Distributed Denial-of-Service) attack.\n106\t  - *Distributed Denial-of-Service (DDoS) Attack*: Occurs when many machines target a single victim and attack them at the exact same time.\n107\t  - Botnets are used by attackers to combine processing power to break through different types of encryption schemes.\n108\t  - Attackers usually only use about 20-25% of any zombie’s power.\n109\t\n110\t## Rootkits\n111\t **Rootkit**: Designed to gain administrative-level control over a given computer system without being detected.\n112\t- The account with the highest level of permissions is called the Administrator account.\n113\t  - Allows the person to install programs, delete programs, open ports, shut ports, and do whatever they want on that system.\n114\t- A computer system has several different rings of permissions throughout the system.\n115\t  - *Ring 3 (Outermost Ring)*: Where user level permissions are used.\n116\t  - *Ring 0 (Innermost or Highest Permission Levels)*: Operating in Ring 0 is called “kernel mode”, allows control over device drivers, sound card, video display, etc.\n117\t- When a rootkit is installed on a system, it tries to move from Ring 1 to Ring 0 to hide from other functions of the operating system to avoid detection.\n118\t- One technique used by rootkits to gain deeper access is DLL injection.\n119\t  - *DLL Injection*: Technique used to run arbitrary code within the address space of another process by forcing it to load a dynamic-link library.\n120\t  - *Dynamic Link Library (DLL)*: Collection of code and data used by multiple programs simultaneously for code reuse and modularization.\n121\t- *Shim*: A piece of software code placed between two components to intercept and redirect calls between them.\n122\t  - Rootkits are powerful and difficult to detect because the operating system is essentially blinded to them.\n123\t  - To detect them, boot from an external device and scan the internal hard drive using a good anti-malware scanning solution from a live boot Linux distribution.\n124\t\n125\t## Backdoors and Logic Bombs\n126\t#### **Backdoor**: \n127\tOriginally placed in computer programs to bypass normal security and authentication functions, often by designers and programmers.\n128\t  - *Remote Access Trojan (RAT)*: Acts like a backdoor in modern networks, placed by threat actors to maintain persistent access to a system.\n129\t  - *Easter egg*: Hidden feature or novelty within a program, often inserted by developers as an inside joke, but may contain significant vulnerabilities.\n130\t#### **Logic Bombs**: \n131\tMalicious code inserted into a program, which executes only when certain conditions are met.\n132\t\n133\t## Keylogger\n134\t **Keylogger**: Software or hardware that records every keystroke made on a computer or mobile device.\n135\t- Can be software-based or hardware-based.\n136\t  - *Software Keyloggers*: Malicious programs installed on a victim's computer, often bundled with other software or delivered through social engineering attacks.\n137\t  - *Hardware Keyloggers*: Physical devices plugged into a computer, resembling a USB drive or embedded within a keyboard cable.\n138\t#### Protection measures:\n139\t- Regular updates and patches.\n140\t- Quality antivirus and antimalware solutions.\n141\t- Phishing awareness training.\n142\t- Multi-factor authentication.\n143\t- Encryption of keystrokes.\n144\t- Physical checks of desktops, laptops, and servers.\n145\t\n146\t## Spyware and Bloatware\n147\t\n148\t#### **Spyware**: Malicious software designed to gather and send information about a user or organization without their knowledge.\n149\t- Installed through various methods such as bundling with other software or deceptive pop-up ads.\n150\t- Protection: Use reputable antivirus and anti-spyware tools regularly updated.\n151\t#### **Bloatware**: Pre-installed software on new computers or smartphones that users did not request or need.\n152\t- Can waste storage space, slow down performance, and introduce security vulnerabilities.\n153\t- Removal methods: Manual removal, bloatware removal tools, or clean OS installation.\n154\t\n155\t## Malware Attack Techniques\n156\t\n157\t**Malware Exploitation Technique**: Method by which malware penetrates and infects a system.\n158\t- Some malware focuses on infecting system memory to leverage remote procedure calls over the network.\n159\t- Modern malware often uses fileless techniques to avoid detection.\n160\t  - *Stage 1 Dropper or Downloader*: Lightweight shellcode executed on a system to retrieve additional portions of malware code.\n161\t    - *Dropper*: Initiates or runs other malware forms within a payload.\n162\t    - *Downloader*: Retrieves additional tools post-initial infection.\n163\t    - **Shellcode**: Lightweight code meant to execute an exploit on a target.\n164\t - *Stage 2: Downloader*: Installs remote access Trojan for command and control on the victimized system.\n165\t- *Actions on Objectives*: Execute primary objectives like data exfiltration or file encryption.\n166\t- *Concealment*: Helps threat actors prolong unauthorized access by hiding tracks and erasing log files.\n167\t- *“Living off the Land”*: Exploits standard tools for intrusions.\n168\t\n169\t\n170\t## 9 Common Indicators of Malware Attacks\n171\t\n172\t- **Account Lockouts**:\n173\tMalware, especially those designed for credential theft or brute force attacks, can trigger multiple failed login attempts that would result in a user’s account being locked out.\n174\t\n175\t- **Concurrent Session Utilization**:\n176\tIf you notice that a single user account has multiple simultaneous or concurrent sessions open, especially from various geographic locations.\n177\t\n178\t- **Blocked Content**:\n179\tIf there is a sudden increase in the amount of blocked content alerts you are seeing from your security tools.\n180\t\n181\t- **Impossible Travel**:\n182\tRefers to a scenario where a user's account is accessed from two or more geographically separated locations in an impossibly short period of time.\n183\t\n184\t- **Resource Consumption**:\n185\tIf you are observing any unusual spikes in CPU, memory, or network bandwidth utilization that cannot be linked back to a legitimate task.\n186\t\n187\t- **Resource Inaccessibility**:\n188\t**Ransomware**\n189\t  - Form of malware that encrypts user files to make them inaccessible to the user.\n190\t  - If a large number of files or critical systems suddenly become inaccessible or if users receive messages demanding payment to decrypt their data.\n191\t\n192\t- **Out-of-Cycle Logging**:\n193\tIf you are noticing that your logs are being generated at odd hours or during times when no legitimate activities should be taking place (such as in the middle of the night when no employees are actively working).\n194\t\n195\t- **Missing Logs**:\n196\tIf you are conducting a log review as a cybersecurity analyst and you see that there are gaps in your logs or if the logs have been cleared without any authorized reason.\n197\t\n198\t- **Published or Documented Attacks**:\n199\tIf a cybersecurity research or reporter published a report that shows that your organization’s network has been infected as part of a botnet or other malware-based attack.\n",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_013PQPirwQQrDoyzbGUqLFxC",
+    "is_error": false,
+    "processed_at": "2026-06-01T14:48:18.882517Z",
+    "tool_use_id": "sevt_01D9G4j7y8JLQaqtvUdpj38w",
+    "type": "agent.tool_result"
+  }
+]
