@@ -2,7 +2,7 @@
 
 **Course:** CSC-114 Artificial Intelligence I · Summer 2026
 **Due:** June 14, 2026
-**Status:** In Progress
+**Status:** Complete
 
 ---
 
@@ -20,13 +20,20 @@ This module covers Chapter 2 of *Deep Learning with Python* (3rd ed.) — the ma
 | `system-prompt-v1.md` | CSC114Bot system prompt documentation — design decisions, file upload process, and comparison to Module 1 SecPlus-Bot |
 | `web-csc114-bot.yaml` | Agent YAML configuration file |
 | `session-events-sesn_01RPSkh33rgk4LvfTMYNXjzZ.json` | Raw session event log from platform.claude.com verifying the live agent session |
-| *(Teachable Machines model file — pending 6/14 class)* | Exported model from in-class Google Teachable Machines exercise |
 
 **notes/**
 
 | File | Description |
 |------|-------------|
 | `chapter2_neural_network_math.md` | Full Chapter 2 text from *Deep Learning with Python* (3rd ed.) — uploaded to the Files API as the agent knowledge base |
+
+**teachable-machine/**
+
+| File | Description |
+|------|-------------|
+| `metadata.json` | Model metadata — labels, version, timestamp |
+| `model.json` | TensorFlow.js model architecture |
+| `weights.bin` | Trained model weights |
 
 ---
 
@@ -58,10 +65,13 @@ What skills and workflows do I need to develop to work with Python notebooks, as
 
 ## Teachable Machines
 
-*In-class exercise — 6/14. To be updated after class.*
+- **Model type:** Image recognition
+- **Labels:** `neutral`, `TWO`, `FIVE`
+- **Task:** Classify handwritten digits — distinguishing a written 2 from a written 5, with a neutral/background class
+- **Framework:** Google Teachable Machines (TensorFlow.js)
+- **Exported:** `teachable-machine/` — metadata, model architecture, and weights
 
-- Model type:
-- Performance compared to other groups:
+The `neutral` class directly demonstrates the answer to Q2: a two-class model forced to choose between TWO and FIVE would misfire on any input that is neither. The background class gives the model a valid output for unrecognized input.
 
 ---
 
