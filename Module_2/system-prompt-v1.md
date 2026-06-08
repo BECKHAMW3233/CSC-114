@@ -1,36 +1,6 @@
-# CSC114Bot — System Prompt Version History
+# CSC114Bot — System Prompt Documentation
 
-## Version 1 (broken)
-
-```yaml
-name: web-csc114-bot
-model:
-  id: claude-sonnet-4-6
-  speed: standard
-description: CSC-114 Artificial Intelligence I — Deep Learning study assistant for FTCC students
-system: |
-  ## Section 3: Domain Knowledge
-  You have access to the full Chapter 2 text mounted at /uploads/:
-  - /uploads/chapter2_neural_network_math.md
-  Read this file when answering any question about Chapter 2 concepts,
-  code examples, vocabulary, or terminology. The file is the authoritative
-  source. If anything in your training conflicts with the file, prefer the file.
-tools:
-  - configs: []
-    default_config:
-      enabled: true
-      permission_policy:
-        type: always_allow
-    type: agent_toolset_20260401
-```
-
-**Problems with Version 1:**
-- `speed: standard` is not a valid field in the Claude API spec — causes errors on session creation
-- File had not yet been uploaded via the Files API — the `/uploads/` path existed in the system prompt but no file was mounted
-
----
-
-## Version 2 (working deployment)
+## Version 1 (working deployment)
 
 ```yaml
 name: web-csc114-bot
@@ -99,23 +69,43 @@ skills: []
 metadata: {}
 ```
 
-**Changes from Version 1:**
-- Removed `speed: standard` — invalid field, caused session creation errors
-- Added Sections 1, 2, 4, and 5 — identity, behavioral constraints, output format, and context
-- Chapter 2 file uploaded via Files API before deployment — `/uploads/` path now has an actual file behind it
+---
 
-**File upload process:**
-Files cannot be uploaded through the platform.claude.com console UI. They must be uploaded programmatically via the Files API endpoint (`/v1/files`) with the `files-api-2025-04-14` beta header. The upload script (`upload_chapter2.py`) reads the local file and posts it to the API, returning a File ID.
+## System Prompt Design Decisions
+
+**Section 1 — Identity and Role**
+Scopes the agent strictly to CSC-114 Chapter 2 content. Prevents the agent from functioning as a general assistant or completing graded work directly for the student.
+
+**Section 2 — Behavioral Constraints**
+Enforces course vocabulary in every response. Requires the Socratic method on reflection questions — the agent asks guiding questions rather than stating answers. Requires explaining why a misconception is wrong before correcting it.
+
+**Section 3 — Domain Knowledge**
+Points the agent to the uploaded Chapter 2 file as the authoritative source. The file is the actual textbook chapter, not a summary, so the agent works from primary course material.
+
+**Section 4 — Output Format**
+Standardizes response structure by question type: vocabulary gets plain-English first, then technical; concept questions get analogy first, then detail; practice questions withhold the answer until the student responds.
+
+**Section 5 — Context**
+Identifies the course, institution, textbook, and date so the agent does not need to infer context from the conversation.
+
+---
+
+## File Upload Process
+
+Files cannot be uploaded through the platform.claude.com console UI. They must be uploaded programmatically via the Files API endpoint (`/v1/files`) with the `files-api-2025-04-14` beta header.
 
 - **File uploaded:** `chapter2_neural_network_math.md`
 - **File ID:** `file_011Cbqtt5oGEU3GMRJpzdarg`
 - **Mount path:** `/uploads/chapter2_neural_network_math.md`
 - **File size:** 33 KB
 
-The `agent_toolset_20260401` tool block must be present for file resources to be readable. Without it the session returns: `"Missing required tool: file resources require the read tool to be usable."`
+The `agent_toolset_20260401` tool block must be present in the YAML for file resources to be readable. Without it the session returns: `"Missing required tool: file resources require the read tool to be usable."`
 
-**Self-recovery behavior observed:**
-During testing the agent tried `/uploads/chapter2_neural_network_math.md` first, received a file-not-found error, then ran a bash `find` command to locate the actual mount path at `/mnt/session/uploads/chapter2_neural_network_math.md`, and retried the read successfully — all without any user intervention. This is the same self-recovery pattern documented in the Module 1 SecPlus-Bot testing log (Test 3).
+---
+
+## Self-Recovery Behavior Observed
+
+During the test session the agent attempted to read `/uploads/chapter2_neural_network_math.md`, received a file-not-found error, then ran a bash `find` command to locate the actual mount path at `/mnt/session/uploads/chapter2_neural_network_math.md`, and retried the read successfully — without any user intervention. This is the same self-recovery pattern documented in the Module 1 SecPlus-Bot testing log.
 
 ---
 
@@ -126,7 +116,6 @@ During testing the agent tried `/uploads/chapter2_neural_network_math.md` first,
 | **Agent name** | web-secplus-bot | web-csc114-bot |
 | **Knowledge base** | 8 Security+ study note files | 1 Chapter 2 textbook file |
 | **Scope enforcement** | Hard refusal on out-of-scope | Redirects to reasoning, softer boundary |
-| **Out-of-scope response** | "That is outside my scope." | Guides student to think through it |
 | **File upload** | 8 files, multiple IDs | 1 file, single ID |
 | **Self-recovery** | Observed (Test 3) | Observed (vocabulary question) |
 | **Session ID** | sesn_01CGfjAYcjAR1hwyZZoN8fEn | sesn_01RPSkh33rgk4LvfTMYNXjzZ |
