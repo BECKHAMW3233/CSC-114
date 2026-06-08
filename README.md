@@ -91,8 +91,8 @@ CSC-114/
     ├── readme.md
     ├── m2-practice-chat.md
     ├── system-prompt-v1.md
+    ├── web-csc114-bot.yaml
     ├── session-events-sesn_01RPSkh33rgk4LvfTMYNXjzZ.json
-    ├── (web-csc114-bot.yaml — to be added)
     └── (Teachable Machines model file — pending 6/14 class)
 ```
 
