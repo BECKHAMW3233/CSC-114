@@ -17,10 +17,16 @@ This module covers Chapter 2 of *Deep Learning with Python* (3rd ed.) — the ma
 | File | Description |
 |------|-------------|
 | `m2-practice-chat.md` | Chat transcript from CSC114Bot session covering vocabulary definitions and three reflection questions |
-| `system-prompt-v1.md` | CSC114Bot system prompt version history — documents Version 1 (broken), Version 2 (working), file upload process, and comparison to Module 1 SecPlus-Bot |
+| `system-prompt-v1.md` | CSC114Bot system prompt documentation — design decisions, file upload process, and comparison to Module 1 SecPlus-Bot |
+| `web-csc114-bot.yaml` | Agent YAML configuration file |
 | `session-events-sesn_01RPSkh33rgk4LvfTMYNXjzZ.json` | Raw session event log from platform.claude.com verifying the live agent session |
-| *(web-csc114-bot.yaml — to be added)* | Agent YAML configuration file |
 | *(Teachable Machines model file — pending 6/14 class)* | Exported model from in-class Google Teachable Machines exercise |
+
+**notes/**
+
+| File | Description |
+|------|-------------|
+| `chapter2_neural_network_math.md` | Full Chapter 2 text from *Deep Learning with Python* (3rd ed.) — uploaded to the Files API as the agent knowledge base |
 
 ---
 
