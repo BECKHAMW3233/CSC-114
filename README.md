@@ -93,7 +93,9 @@ CSC-114/
     ├── system-prompt-v1.md
     ├── web-csc114-bot.yaml
     ├── session-events-sesn_01RPSkh33rgk4LvfTMYNXjzZ.json
-    └── (Teachable Machines model file — pending 6/14 class)
+    ├── (Teachable Machines model file — pending 6/14 class)
+    └── notes/
+        └── chapter2_neural_network_math.md
 ```
 
 *Additional module folders will be added as the course progresses.*
