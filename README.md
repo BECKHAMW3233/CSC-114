@@ -88,9 +88,12 @@ CSC-114/
 │       └── notes/
 │           └── (8 Security+ study note files)
 └── Module_2/                        ← Module 2: Deep Learning Basics
+    ├── readme.md
     ├── m2-practice-chat.md
+    ├── system-prompt-v1.md
     ├── session-events-sesn_01RPSkh33rgk4LvfTMYNXjzZ.json
-    └── (Teachable Machines model file — to be added after 6/14 class)
+    ├── (web-csc114-bot.yaml — to be added)
+    └── (Teachable Machines model file — pending 6/14 class)
 ```
 
 *Additional module folders will be added as the course progresses.*
