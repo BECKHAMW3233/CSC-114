@@ -178,4 +178,4 @@ The book recommends **Google Colab** as the easiest path. But with your setup, a
 
 ---
 
-*Note: Teachable Machines model type and in-class performance comparison to be added after 6/14 class session.*
+*Teachable Machines model built: Image recognition — labels: neutral, TWO, FIVE. Handwritten digit classifier distinguishing a written 2 from a written 5 with a neutral background class. Model exported to teachable-machine/ (metadata.json, model.json, weights.bin).
