@@ -93,9 +93,12 @@ CSC-114/
     ├── system-prompt-v1.md
     ├── web-csc114-bot.yaml
     ├── session-events-sesn_01RPSkh33rgk4LvfTMYNXjzZ.json
-    ├── (Teachable Machines model file — pending 6/14 class)
-    └── notes/
-        └── chapter2_neural_network_math.md
+    ├── notes/
+    │   └── chapter2_neural_network_math.md
+    └── teachable-machine/
+        ├── metadata.json
+        ├── model.json
+        └── weights.bin
 ```
 
 *Additional module folders will be added as the course progresses.*
@@ -107,8 +110,8 @@ CSC-114/
 ### Module 1 — Claude Projects as a Knowledge Platform ✅
 Built and deployed **SecPlus-Bot** (web-secplus-bot), a CompTIA Security+ SY0-701 exam prep agent on platform.claude.com using the Managed Agents API. Uploaded 8 study note files via the Files API, mounted them as a knowledge base, and validated the agent across three test cases covering known-good recall, out-of-scope refusal, and edge-case self-recovery. Documented in `module_1/testing-log.md` with raw session event log as verification.
 
-### Module 2 — Deep Learning Basics 🔄
-Built and deployed **CSC114Bot** (web-csc114-bot), a Chapter 2 deep learning study assistant on platform.claude.com. Uploaded the full Chapter 2 text (`chapter2_neural_network_math.md`) via the Files API and mounted it as the agent's knowledge base. Used the agent to work through course vocabulary (Scalar, Tensor, Vector, Matrix, Rank, Slope, Gradient) and three reflection questions on gradient descent, Teachable Machines classification states, and Python notebook workflows. Teachable Machines in-class component pending 6/14.
+### Module 2 — Deep Learning Basics ✅
+Built and deployed **CSC114Bot** (web-csc114-bot), a Chapter 2 deep learning study assistant on platform.claude.com. Uploaded the full Chapter 2 text via the Files API as the agent knowledge base. Used the agent to work through course vocabulary and three reflection questions on gradient descent, Teachable Machines classification states, and Python notebook workflows. Built an image classification model in Google Teachable Machines distinguishing handwritten digits TWO and FIVE with a neutral background class. Exported model files committed to `teachable-machine/`.
 
 ---
 
