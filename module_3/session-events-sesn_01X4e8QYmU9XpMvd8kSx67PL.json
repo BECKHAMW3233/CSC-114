@@ -1,0 +1,972 @@
+[
+  {
+    "id": "sevt_013eUjy1WNYjK6CZR7G157FC",
+    "processed_at": "2026-06-17T15:42:17.635439Z",
+    "type": "session.status_running"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_01UeT23wPXThUJSux3fJVfC3",
+    "processed_at": "2026-06-17T15:42:17.635440Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "type": "session.thread_status_running"
+  },
+  {
+    "content": [
+      {
+        "text": "What loss function does this reading recommend for regression problems, and why?",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01V3bi1JdLbkYzcAmfWkC596",
+    "processed_at": "2026-06-17T15:42:19.384466Z",
+    "type": "user.message"
+  },
+  {
+    "id": "sevt_01QSQZKpBQ6hUdDFj3oa45wv",
+    "processed_at": "2026-06-17T15:42:19.384467Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "id": "sevt_0131xUmeCQZBcVTwvzpG87WE",
+    "processed_at": "2026-06-17T15:42:19.384468Z",
+    "type": "agent.thinking"
+  },
+  {
+    "evaluated_permission": "allow",
+    "id": "sevt_01Hw3yS33W2ehSLgjEgUXJ4h",
+    "input": {
+      "command": "ls /mnt/session/uploads/"
+    },
+    "name": "bash",
+    "processed_at": "2026-06-17T15:42:19.384470Z",
+    "type": "agent.tool_use"
+  },
+  {
+    "id": "sevt_01EiutnB3w3Pn1NnhaPQ7Qiz",
+    "is_error": false,
+    "model_request_start_id": "sevt_01QSQZKpBQ6hUdDFj3oa45wv",
+    "model_usage": {
+      "cache_creation_input_tokens": 7925,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3,
+      "output_tokens": 82
+    },
+    "processed_at": "2026-06-17T15:42:19.384471Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "content": [
+      {
+        "text": "chapter-3.md\n",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01F6USBKqjSk4ZKHKaVSKocj",
+    "is_error": false,
+    "processed_at": "2026-06-17T15:42:21.994406Z",
+    "tool_use_id": "sevt_01Hw3yS33W2ehSLgjEgUXJ4h",
+    "type": "agent.tool_result"
+  },
+  {
+    "id": "sevt_01BoaCKZ4Cpzx8DmCSCvHZGg",
+    "processed_at": "2026-06-17T15:42:24.673276Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "evaluated_permission": "allow",
+    "id": "sevt_012cpefPMgMg2rLcWh4HWePh",
+    "input": {
+      "-i": true,
+      "context": 3,
+      "output_mode": "content",
+      "path": "/mnt/session/uploads/chapter-3.md",
+      "pattern": "regression|loss function|MSE|MAE|mean absolute|mean squared"
+    },
+    "name": "grep",
+    "processed_at": "2026-06-17T15:42:24.673277Z",
+    "type": "agent.tool_use"
+  },
+  {
+    "id": "sevt_01EJCb949cT8m1izL4bqoiDm",
+    "is_error": false,
+    "model_request_start_id": "sevt_01BoaCKZ4Cpzx8DmCSCvHZGg",
+    "model_usage": {
+      "cache_creation_input_tokens": 102,
+      "cache_read_input_tokens": 7925,
+      "input_tokens": 1,
+      "output_tokens": 149
+    },
+    "processed_at": "2026-06-17T15:42:24.673278Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "content": [
+      {
+        "text": "148-– Backpropagation, a way to compute the gradient of mathematical expressions\n149-¡ Second, high-level deep learning concepts—This translates to Keras APIs:\n150-– Layers, which are combined into a model\n151:– A loss function, which defines the feedback signal used for learning\n152-– An optimizer, which determines how learning proceeds\n153-– Metrics to evaluate model performance, such as accuracy\n154-– A training loop that performs mini-batch stochastic gradient descent\n--\n200-¡ Making TensorFlow functions fast by using just-in-time compilation\n201-\n202-We’ll then conclude the introduction with an end-to-end example: a pure-TensorFlow\n203:implementation of linear regression.\n204-Let’s get those tensors flowing.\n205-Tensors and variables in TensorFlow\n206-\n--\n541-Because our linear classifier operates on 2D inputs, W is really just two scalar coefficients: W = [[w1], [w2]]. Meanwhile, b is a single scalar coefficient. As such, for given\n542-input point [x, y], its prediction value is prediction = [[w1], [w2]] • [x, y] + b =\n543-w1 * x + w2 * y + b.\n544:Here’s our loss function.\n545:Listing 3.19 The mean squared error loss function\n546-per_sample_losses will be a tensor with the\n547-same shape as targets and predictions,\n548-containing per-sample loss scores.\n--\n713-¡ Packaging computation with the Module class\n714-¡ Speeding up PyTorch by using compilation\n715-\n716:We’ll conclude the introduction by reimplementing our linear regression end-to-end\n717-example in pure PyTorch.\n718-Tensors and parameters in PyTorch\n719-\n--\n828-There’s no explicit “gradient tape” in PyTorch. A similar mechanism does exist: when\n829-you run any computation in PyTorch, the framework creates a one-time computation\n830-graph (a “tape”) that records what just happened. However, that tape is hidden from\n831:the user. The public API for using it is at the level of tensors themselves: you can call\n832-tensor.backward() to run backpropagation through all operations previously executed that led to that tensor. Doing this will populate the .grad attribute of all tensors\n833-that are tracking gradients.\n834-Listing 3.26 Computing a gradient with .backward()\n--\n884-def model(inputs, W, b):\n885-return torch.matmul(inputs, W) + b\n886-\n887:This is our loss function. We just switch from tf.square to torch.square and from\n888-tf.reduce_mean to torch.mean:\n889-def mean_squared_error(targets, predictions):\n890-per_sample_losses = torch.square(targets - predictions)\n--\n1016-\n1017-One last thing. Similarly to how TensorFlow lets you compile functions for better performance, PyTorch lets you compile functions or even Module instances via the torch\n1018-.compile() utility. This API uses PyTorch’s very own compiler, named Dynamo.\n1019:Let’s try it on our linear regression Module:\n1020-compiled_model = torch.compile(model)\n1021-\n1022-The resulting object is intended to work identically to the original—except the forward and backward pass should run faster.\n--\n1258-three-step process:\n1259-1\n1260-\n1261:Define a loss function, compute_loss().\n1262-\n1263-2\n1264-\n--\n1273-\n1274-jax.grad(compute_loss) to retrieve a gradient-computation\n1275-\n1276:The loss function should verify the following properties:\n1277-¡ It should return a scalar loss value.\n1278-¡ Its first argument (which, in the following example, is also the only argument)\n1279-\n--\n1286-def compute_loss(input_var):\n1287-return jnp.square(input_var)\n1288-\n1289:We can now call the JAX utility jax.grad() on this loss function. It returns a gradient-­\n1290-computation function—a function that takes the same arguments as the original loss\n1291-function and returns the gradient of the loss with respect to input_var:\n1292-grad_fn = jax.grad(compute_loss)\n--\n1324-\n1325-Now, what if you need gradients for more than a single variable? And what if your\n1326-compute_loss() function has more than one input?\n1327:Let’s say your state contains three variables, a, b, and c, and your loss function has two\n1328-inputs, x and y. You would simply structure it like this:\n1329-def compute_loss(state, x, y):\n1330-...\n--\n1355-Chapter 3 Introduction to TensorFlow, PyTorch, JAX, and Keras\n1356-1\n1357-\n1358:Edit the loss function to return a tuple where the first entry is the loss, and the\n1359-second entry is your extra output.\n1360-\n1361-2\n--\n1405-tion, their new value will be returned by the function.\n1406-¡ Gradients are computed using the JAX value_and_grad() utility.\n1407-\n1408:Let’s get started. The model function and the mean squared error function should\n1409-look familiar:\n1410-\n1411-\n--\n1886-\n1887-The “compile” step: Configuring the learning process\n1888-Once the model architecture is defined, you still have to choose three more things:\n1889:¡ Loss function (objective function) —The quantity that will be minimized during\n1890-\n1891-training. It represents a measure of success for the task at hand.\n1892-¡ Optimizer—Determines how the network will be updated based on the loss func-\n--\n1922-Specifies a list of metrics:\n1923-in this case, only accuracy\n1924-\n1925:mean squared error\n1926-\n1927-In the previous call to compile(), we passed the optimizer, loss, and metrics as strings\n1928-(such as \"rmsprop\"). These strings are actually shortcuts that get converted to Python\n--\n1977-\n1978-3.6.5\n1979-\n1980:Picking a loss function\n1981:Choosing the right loss function for the right problem is extremely important: your\n1982-network will take any shortcut it can to minimize the loss. So if the objective doesn’t\n1983-fully correlate with success for the task at hand, your network will end up doing things\n1984-you may not have wanted. Imagine a stupid, omnipotent AI trained via SGD, with this\n--\n1986-alive.” To make its job easier, this AI might choose to kill all humans except a few and\n1987-focus on the well-being of the remaining ones because average well-being isn’t affected\n1988-by how many humans are left. That might not be what you intended! Just remember\n1989:that all neural networks you build will be just as ruthless in lowering their loss function,\n1990-so choose the objective wisely, or you’ll have to face unintended side effects.\n1991:Fortunately, when it comes to common problems such as classification, regression,\n1992-and sequence prediction, there are simple guidelines you can follow to choose the\n1993-\n1994-\n--\n1999-correct loss. For instance, you’ll use binary crossentropy for a two-class classification\n2000-problem, categorical crossentropy for a many-class classification problem, and so on.\n2001-Only when you’re working on truly new research problems will you have to develop\n2002:your own loss functions. In the next few chapters, we’ll detail explicitly which loss functions to choose for a wide range of common tasks.\n2003-\n2004-3.6.6\n2005-",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_015jkQ6FAopFJDMtHVRXeUPh",
+    "is_error": false,
+    "processed_at": "2026-06-17T15:42:25.324169Z",
+    "tool_use_id": "sevt_012cpefPMgMg2rLcWh4HWePh",
+    "type": "agent.tool_result"
+  },
+  {
+    "id": "sevt_017jcD8HN4V8KFmkfYjWpVKZ",
+    "processed_at": "2026-06-17T15:42:28.685978Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "id": "sevt_01CEqE1Fnv8fbcA3DKzmtbXR",
+    "processed_at": "2026-06-17T15:42:28.685979Z",
+    "type": "agent.thinking"
+  },
+  {
+    "evaluated_permission": "allow",
+    "id": "sevt_01ULNTB3JhaVTbxG2PxY3VJx",
+    "input": {
+      "-i": true,
+      "context": 4,
+      "output_mode": "content",
+      "path": "/mnt/session/uploads/chapter-3.md",
+      "pattern": "regression.*loss|loss.*regression|mean absolute error|mean squared error.*regression"
+    },
+    "name": "grep",
+    "processed_at": "2026-06-17T15:42:28.685981Z",
+    "type": "agent.tool_use"
+  },
+  {
+    "id": "sevt_01B5YiAgzA385ehHFCXxAUHv",
+    "is_error": false,
+    "model_request_start_id": "sevt_017jcD8HN4V8KFmkfYjWpVKZ",
+    "model_usage": {
+      "cache_creation_input_tokens": 2075,
+      "cache_read_input_tokens": 8027,
+      "input_tokens": 1,
+      "output_tokens": 205
+    },
+    "processed_at": "2026-06-17T15:42:28.685982Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "content": [
+      {
+        "text": "No matches found",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01J6HGWtYRN6abA6AidgxX2N",
+    "is_error": false,
+    "processed_at": "2026-06-17T15:42:29.191912Z",
+    "tool_use_id": "sevt_01ULNTB3JhaVTbxG2PxY3VJx",
+    "type": "agent.tool_result"
+  },
+  {
+    "id": "sevt_01BkcsgYA1YBeeD4C5PAFz55",
+    "processed_at": "2026-06-17T15:42:34.166370Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "content": [
+      {
+        "text": "Chapter 3 is the only file currently loaded, and it covers AI frameworks (TensorFlow, PyTorch, JAX, Keras) — not regression problems. The chapter does use **mean squared error (MSE)** in its linear regression code examples, but it does not contain a dedicated discussion recommending a specific loss function for regression problems with an explanation of why.\n\nThat topic — loss function selection for regression (and the comparison of MSE vs. MAE) — belongs to **Chapter 4**, which covers the California Housing regression example and explicitly walks through loss function choices for classification and regression tasks. Chapter 4 is not currently loaded.\n\nLoad the Chapter 4 file and I can answer this directly from the source material.",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01NzbxTMANmD8ZcQ49VXXwvA",
+    "processed_at": "2026-06-17T15:42:34.166371Z",
+    "type": "agent.message"
+  },
+  {
+    "id": "sevt_01H9eKS3RtH1JY2mGMPVMCjr",
+    "is_error": false,
+    "model_request_start_id": "sevt_01BkcsgYA1YBeeD4C5PAFz55",
+    "model_usage": {
+      "cache_creation_input_tokens": 220,
+      "cache_read_input_tokens": 10102,
+      "input_tokens": 1,
+      "output_tokens": 159
+    },
+    "processed_at": "2026-06-17T15:42:34.166372Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_01Vuja5owd8L4GSETLqQ9xE2",
+    "processed_at": "2026-06-17T15:42:34.366963Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.thread_status_idle"
+  },
+  {
+    "id": "sevt_01EadrQd6xdcZuf15ktDpCzx",
+    "processed_at": "2026-06-17T15:42:34.366964Z",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.status_idle"
+  },
+  {
+    "id": "sevt_01CCNGWZjSwZSnG5CHQzMKvG",
+    "processed_at": "2026-06-17T15:43:21.376827Z",
+    "type": "session.status_running"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_0178eiwzjJPaqdyBP3TgmPCw",
+    "processed_at": "2026-06-17T15:43:21.376828Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "type": "session.thread_status_running"
+  },
+  {
+    "content": [
+      {
+        "text": "List the five steps of the training loop, in order.",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_018BVuBpDde5AVyYRH4npYzc",
+    "processed_at": "2026-06-17T15:43:24.342088Z",
+    "type": "user.message"
+  },
+  {
+    "id": "sevt_01YGpFvbbwsrZY3MRh9rxDjN",
+    "processed_at": "2026-06-17T15:43:24.342089Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "id": "sevt_014HG87K8WYKerGW3jKcuwz2",
+    "processed_at": "2026-06-17T15:43:24.342090Z",
+    "type": "agent.thinking"
+  },
+  {
+    "evaluated_permission": "allow",
+    "id": "sevt_01A3S6PQZd9ybqnY5FZKxSMV",
+    "input": {
+      "-i": true,
+      "context": 2,
+      "output_mode": "content",
+      "path": "/mnt/session/uploads/chapter-3.md",
+      "pattern": "training loop|step|gradient|forward|backward|update|weight"
+    },
+    "name": "grep",
+    "processed_at": "2026-06-17T15:43:24.342092Z",
+    "type": "agent.tool_use"
+  },
+  {
+    "id": "sevt_01PEkGWCQgW8PEVcwkMbvnCP",
+    "is_error": false,
+    "model_request_start_id": "sevt_01YGpFvbbwsrZY3MRh9rxDjN",
+    "model_usage": {
+      "cache_creation_input_tokens": 2467,
+      "cache_read_input_tokens": 8027,
+      "input_tokens": 3,
+      "output_tokens": 186
+    },
+    "processed_at": "2026-06-17T15:43:24.342093Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "content": [
+      {
+        "text": "50-in 1964.1\n51-All these frameworks combine three key features:\n52:¡ A way to compute gradients for arbitrary differentiable functions (automatic\n53-\n54-differentiation)\n--\n61-It took a long time for the field to develop robust solutions for all three problems\n62-and package those solutions in a reusable form. Since its inception in the 1960s and\n63:until the 2000s, autodifferentiation had no practical applications in machine learning—folks who worked with neural networks simply wrote their own gradient logic\n64-by hand, usually in a language like C++. Meanwhile, GPU programming was all but\n65-impossible.\n--\n146-– Tensors, including special tensors that store the network’s state (variables)\n147-– Tensor operations such as addition, relu, or matmul\n148:– Backpropagation, a way to compute the gradient of mathematical expressions\n149-¡ Second, high-level deep learning concepts—This translates to Keras APIs:\n150-– Layers, which are combined into a model\n--\n152-– An optimizer, which determines how learning proceeds\n153-– Metrics to evaluate model performance, such as accuracy\n154:– A training loop that performs mini-batch stochastic gradient descent\n155-Further, Keras is unique in that it isn’t a fully standalone framework. It needs a backend\n156-engine to run, much like a prefabricated house-building kit needs to source building\n157-materials from somewhere. TensorFlow, PyTorch, and JAX can all be used as Keras\n158-backends. In addition, Keras can run on NumPy, but since NumPy does not provide\n159:an API for gradients, Keras workflows on NumPy are restricted to making predictions\n160-from a model—training is impossible.\n161-Now that you have a clearer understanding of how all these frameworks came to be\n--\n192-3.3.1\n193-\n194:First steps with TensorFlow\n195-Over the next paragraphs, you’ll get familiar with all the basics of TensorFlow. We’ll\n196-cover the following key concepts:\n197-¡ Tensors and variables\n198-¡ Numerical operations in TensorFlow\n199:¡ Computing gradients with a GradientTape\n200-¡ Making TensorFlow functions fast by using just-in-time compilation\n201-\n--\n275-This will fail, as a tensor isn’t assignable.\n276-\n277:To train a model, we’ll need to update its state, which is a set of tensors. If tensors\n278-aren’t assignable, how do we do it, then? That’s where variables come in. tf.Variable is\n279-the class meant to manage modifiable state in TensorFlow.\n--\n342-return tf.nn.relu(tf.matmul(inputs, W) + b)\n343-\n344:Gradients in TensorFlow: A second look at the GradientTape API\n345-\n346-So far, TensorFlow seems to look a lot like NumPy. But here’s something NumPy\n347:can’t do: retrieve the gradient of any differentiable expression with respect to any of\n348:its inputs. Just open a GradientTape scope, apply some computation to one or several\n349:input tensors, and retrieve the gradient of the result with respect to the inputs.\n350:Listing 3.10 Using the GradientTape\n351-input_var = tf.Variable(initial_value=3.0)\n352:with tf.GradientTape() as tape:\n353-result = tf.square(input_var)\n354:gradient = tape.gradient(result, input_var)\n355-\n356:This is most commonly used to retrieve the gradients of the loss of a model with respect\n357:to its weights: gradients = tape.gradient(loss, weights).\n358:In chapter 2, you saw how the GradientTape works on either a single input or a list of\n359-inputs and how inputs could be either scalars or high-dimensional tensors.\n360:So far, you’ve only seen the case where the input tensors in tape.gradient() were\n361-TensorFlow variables. It’s actually possible for these inputs to be any arbitrary tensor.\n362-However, only trainable variables are being tracked by default. With a constant tensor,\n363-you’d have to manually mark it as being tracked, by calling tape.watch() on it.\n364:Listing 3.11 Using the GradientTape with constant tensor inputs\n365-input_const = tf.constant(3.0)\n366:with tf.GradientTape() as tape:\n367-tape.watch(input_const)\n368-result = tf.square(input_const)\n369:gradient = tape.gradient(result, input_const)\n370-\n371-Why? Because it would be too expensive to preemptively store the information\n372:required to compute the gradient of anything with respect to anything. To avoid wasting resources, the tape needs to know what to watch. Trainable variables are watched\n373:by default because computing the gradient of a loss with regard to a list of trainable\n374:variables is the most common use case of the gradient tape.\n375:The gradient tape is a powerful utility, even capable of computing second-order\n376:gradients­—that is, the gradient of a gradient. For instance, the gradient of the position of\n377-\n378-\n--\n381-Chapter 3 Introduction to TensorFlow, PyTorch, JAX, and Keras\n382-\n383:an object with regard to time is the speed of that object, and the second-order gradient\n384-is its acceleration.\n385-If you measure the position of a falling apple along a vertical axis over time, and find\n386-that it verifies position(time) = 4.9 * time ** 2, what is its acceleration? Let’s use two\n387:nested gradient tapes to find out.\n388:Listing 3.12 Using nested gradient tapes to compute second-order gradients\n389-time = tf.Variable(0.0)\n390:with tf.GradientTape() as outer_tape:\n391:with tf.GradientTape() as inner_tape:\n392-position = 4.9 * time**2\n393:speed = inner_tape.gradient(position, time)\n394:acceleration = outer_tape.gradient(speed, time)\n395-\n396-We use the outer tape to\n397:compute the gradient of\n398:the gradient from the\n399-inner tape. Naturally, the\n400-answer is 4.9 * 2 = 9.8.\n--\n448-\n449-An end-to-end example: A linear classifier in pure TensorFlow\n450:You know about tensors, variables, and tensor operations, and you know how to compute gradients. That’s enough to build any TensorFlow-based machine learning model\n451:based on gradient descent. Let’s walk through an end-to-end example to make sure\n452-everything is crystal clear.\n453-In a machine learning job interview, you may be asked to implement a linear classifier from scratch: a very simple task that serves as a filter between candidates who have\n--\n534-close to 1 if the sample is predicted to be in class 1).\n535-\n536:Here’s our forward pass function.\n537:Listing 3.18 The forward pass function\n538-def model(inputs, W, b):\n539-return tf.matmul(inputs, W) + b\n--\n560-Chapter 3 Introduction to TensorFlow, PyTorch, JAX, and Keras\n561-\n562:Now, we move to the training step, which receives some training data and updates the\n563:weights W and b to minimize the loss on the data.\n564:Listing 3.20 The training-step function\n565-learning_rate = 0.1\n566-\n--\n569-decorator to speed it up\n570-@tf.function(jit_compile=True)\n571:def training_step(inputs, targets, W, b):\n572:with tf.GradientTape() as tape:\n573:Forward pass, inside of\n574-predictions = model(inputs, W, b)\n575:a gradient tape scope\n576-loss = mean_squared_error(predictions, targets)\n577:grad_loss_wrt_W, grad_loss_wrt_b = tape.gradient(loss, [W, b])\n578-W.assign_sub(grad_loss_wrt_W * learning_rate)\n579-Retrieves the\n580-b.assign_sub(grad_loss_wrt_b * learning_rate)\n581:gradient of the\n582-return loss\n583:Updates the weights\n584-loss with regard\n585:to weights\n586-\n587:For simplicity, we’ll do batch training instead of mini-batch training: we’ll run each training step (gradient computation and weight update) on the entire data, rather than\n588:iterate over the data in small batches. On one hand, this means that each training step\n589:will take much longer to run, since we compute the forward pass and the gradients for\n590:2,000 samples at once. On the other hand, each gradient update will be much more\n591-effective at reducing the loss on the training data, since it will encompass information\n592-from all training samples instead of, say, only 128 random samples. As a result, we will\n593:need many fewer steps of training, and we should use a larger learning rate than what\n594-we would typically use for mini-batch training (we’ll use learning_rate = 0.1, as previously defined).\n595:Listing 3.21 The batch training loop\n596:for step in range(40):\n597:loss = training_step(inputs, targets, W, b)\n598:print(f\"Loss at step {step}: {loss:.4f}\")\n599-\n600:After 40 steps, the training loss seems to have stabilized around 0.025. Let’s plot how\n601-our linear model classifies the training data points, as shown in figure 3.2. Because our\n602-targets are 0s and 1s a given input point will be classified as “0” if its prediction value is\n--\n705-3.4.1\n706-\n707:First steps with PyTorch\n708-Over the next paragraphs, you’ll get familiar with all the basics of PyTorch. We’ll cover\n709-the following key concepts:\n710-¡ Tensors and parameters\n711-¡ Numerical operations in PyTorch\n712:¡ Computing gradients with the backward() method\n713-¡ Packaging computation with the Module class\n714-¡ Speeding up PyTorch by using compilation\n--\n824-return torch.nn.relu(torch.matmul(inputs, W) + b)\n825-\n826:Computing gradients with PyTorch\n827-\n828:There’s no explicit “gradient tape” in PyTorch. A similar mechanism does exist: when\n829-you run any computation in PyTorch, the framework creates a one-time computation\n830-graph (a “tape”) that records what just happened. However, that tape is hidden from\n831-the user. The public API for using it is at the level of tensors themselves: you can call\n832:tensor.backward() to run backpropagation through all operations previously executed that led to that tensor. Doing this will populate the .grad attribute of all tensors\n833:that are tracking gradients.\n834:Listing 3.26 Computing a gradient with .backward()\n835:To compute gradients with respect\n836-to a tensor, it must be created with\n837-requires_grad=True.\n838->>> input_var = torch.tensor(3.0, requires_grad=True)\n839->>> result = torch.square(input_var)\n840:>>> result.backward()\n841:Calling backward() populates the\n842:>>> gradient = input_var.grad\n843-“grad” attribute on all tensors create\n844:>>> gradient\n845-with requires_grad=True.\n846-tensor(6.)\n847-\n848:If you call backward() multiple times in a row, the .grad attribute will “accumulate” gradients: each new call will sum the new gradient with the preexisting one. For instance,\n849-\n850-\n--\n853-Chapter 3 Introduction to TensorFlow, PyTorch, JAX, and Keras\n854-\n855:in the following code, input_var.grad is not the gradient of square(input_var) with\n856:respect to input_var; rather, it is the sum of that gradient and the previously computed\n857:gradient—its value has doubled since our last code snippet:\n858->>> result = torch.square(input_var)\n859:>>> result.backward()\n860->>> input_var.grad\n861-tensor(12.)\n862-\n863:.grad will sum all gradient values\n864:from each time backward() is called.\n865-\n866:To reset gradients, you can just set .grad to None:\n867->>> input_var.grad = None\n868-\n--\n873-An end-to-end example: A linear classifier in pure PyTorch\n874-You now know enough to rewrite our linear classifier in PyTorch. It will stay very similar\n875:to the TensorFlow one—the only major difference is how we compute the gradients.\n876-Let’s start by creating our model variables. Don’t forget to pass requires_grad=True\n877:so we can compute gradients with respect to them:\n878-input_dim = 2\n879-output_dim = 1\n--\n891-return torch.mean(per_sample_losses)\n892-\n893:Now for the training step. Here’s how it works:\n894-\n895-\n--\n899-1\n900-\n901:loss.backward() runs backpropagation starting from the loss output node and\n902-\n903:populates the tensor.grad attribute on all tensors that were involved in the computation of loss. tensor.grad represents the gradient of the loss with regard to\n904-that tensor.\n905-2\n906-\n907:We use the .grad attribute to recover the gradients of the loss with regard to W and b.\n908-\n909-3\n910-\n911:We update W and b using those gradients. Because these updates are not intended\n912:to be part of the backward pass, we do them inside a torch.no_grad() scope,\n913:which skips gradient computation for everything inside it.\n914-\n915-4\n916-\n917-We reset the contents of the .grad property of our W and b parameters, by setting\n918:it to None. If we didn’t do this, gradient values would accumulate across multiple\n919:calls to training_step(), resulting in invalid values:\n920-\n921-learning_rate = 0.1\n922-\n923:Forward pass\n924-\n925:def training_step(inputs, targets, W, b):\n926-Computes\n927-predictions = model(inputs)\n928:gradients\n929-loss = mean_squared_error(targets, predictions)\n930-Retrieves\n931:loss.backward()\n932:gradients\n933-grad_loss_wrt_W, grad_loss_wrt_b = W.grad, b.grad\n934-with torch.no_grad():\n935-W -= grad_loss_wrt_W * learning_rate\n936:Updates weights inside\n937-a no_grad scope\n938-b -= grad_loss_wrt_b * learning_rate\n939-W.grad = None\n940:Resets gradients\n941-b.grad = None\n942-return loss\n--\n953-__init__() method.\n954-\n955:¡ Implement the forward pass computation in the forward() method.\n956-\n957-It should look just like the following.\n--\n968-self.W = torch.nn.Parameter(torch.rand(input_dim, output_dim))\n969-self.b = torch.nn.Parameter(torch.zeros(output_dim))\n970:def forward(self, inputs):\n971-return torch.matmul(inputs, self.W) + self.b\n972-\n--\n974-model = LinearModel()\n975-\n976:When using an instance of torch.nn.Module, rather than calling the forward() method\n977:directly, you’d use __call__() (i.e., directly call the model class on inputs), which redirects to forward() but adds a few framework hooks to it:\n978-torch_inputs = torch.tensor(inputs)\n979-output = model(torch_inputs)\n980-\n981:Now, let’s get our hands on a PyTorch optimizer. To instantiate it, you will need to provide the list of parameters that the optimizer is intended to update. You can retrieve it\n982-from our Module instance via .parameters():\n983-optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)\n984-\n985-Using our Module instance and the PyTorch SGD optimizer, we can run a simplified\n986:training step:\n987:def training_step(inputs, targets):\n988-predictions = model(inputs)\n989-loss = mean_squared_error(targets, predictions)\n990:loss.backward()\n991:optimizer.step()\n992-model.zero_grad()\n993-return loss\n--\n998-b -= grad_loss_wrt_b * learning_rate\n999-\n1000:Now we can just do optimizer.step().\n1001-\n1002-\n--\n1005-81\n1006-\n1007:Similarly, previously we needed to reset parameter gradients by hand by doing\n1008-tensor.grad = None on each one. Now we can just do model.zero_grad().\n1009-\n1010-Overall, this may feel a bit confusing—somehow the loss tensor, the optimizer, and\n1011:the Module instance all seem to be aware of each other through some hidden background mechanism. They’re all interacting with one another via spooky action at a distance. Don’t worry though—you can just treat this sequence of steps (loss.backward()\n1012:- optimizer.step() - model.zero_grad()) as a magic incantation to be recited any time\n1013:you need to write a training step function. Just make sure not to forget model.zero_\n1014-grad(). That would be a major bug (and it is unfortunately quite common)!\n1015-Making PyTorch modules fast using compilation\n--\n1020-compiled_model = torch.compile(model)\n1021-\n1022:The resulting object is intended to work identically to the original—except the forward and backward pass should run faster.\n1023-You can also use torch.compile() as a function decorator:\n1024-@torch.compile\n--\n1089-3.5.1\n1090-\n1091:First steps with JAX\n1092-We’ll go over the following key concepts:\n1093-¡ The array class\n--\n1100-83\n1101-\n1102:¡ Computing gradients via jax.grad and jax.value_and_grad\n1103-¡ Making JAX functions fast by leveraging just-in-time compilation\n1104-\n--\n1215-Tensor assignment\n1216-\n1217:The second difference between JAX and NumPy is tensor assignment. Like in TensorFlow, JAX arrays are not assignable in place. That’s because any sort of in-place modification would go against JAX’s stateless design. Instead, if you need to update a tensor,\n1218-you must create a new tensor with the desired value. JAX makes this easy by providing\n1219:the at()/set() API. These methods allow you to create a new tensor with an updated\n1220:element at a specific index. Here’s an example of how you would update the first element of a JAX array to a new value.\n1221-Listing 3.31 Modifying values in a JAX array\n1222->>> x = jnp.array([1, 2, 3], dtype=\"float32\")\n--\n1252-return jax.nn.relu(jnp.matmul(inputs, W) + b)\n1253-\n1254:Computing gradients with JAX\n1255-\n1256:Unlike TensorFlow and PyTorch, JAX takes a metaprogramming approach to gradient\n1257:computation. Metaprogramming refers to the idea of having functions that return functions—you could call them “meta-functions.” In practice, JAX lets you turn a loss-computation function into a gradient-computation function. So computing gradients in JAX is a\n1258:three-step process:\n1259-1\n1260-\n--\n1268-3\n1269-\n1270:Call grad_fn to retrieve the gradient values.\n1271-\n1272-=\n1273-\n1274:jax.grad(compute_loss) to retrieve a gradient-computation\n1275-\n1276-The loss function should verify the following properties:\n--\n1278-¡ Its first argument (which, in the following example, is also the only argument)\n1279-\n1280:should contain the state arrays we need gradients for. This argument is usually\n1281-named state. For instance, this first argument could be a single array, a list of\n1282-arrays, or a dict of arrays.\n--\n1287-return jnp.square(input_var)\n1288-\n1289:We can now call the JAX utility jax.grad() on this loss function. It returns a gradient-­\n1290-computation function—a function that takes the same arguments as the original loss\n1291:function and returns the gradient of the loss with respect to input_var:\n1292-grad_fn = jax.grad(compute_loss)\n1293-\n1294-Once you’ve obtained grad_fn(), you can call it with the same arguments as compute_\n1295:loss(), and it will return gradients arrays corresponding to the first argument of\n1296-compute_loss(). In our case, our first argument was a single array, so grad_fn() directly\n1297:returns the gradient of the loss with respect to that one array:\n1298-\n1299-\n--\n1305-grad_of_loss_wrt_input_var = grad_fn(input_var)\n1306-\n1307:JAX gradient-computation best practices\n1308-\n1309-So far so good! Metaprogramming is a big word, but it turns out to be quite simple.\n--\n1312-Returning the loss value\n1313-\n1314:It’s usually the case that you don’t just need the gradient array; you also need the loss\n1315-value. It would be quite inefficient to recompute it independently outside of grad_\n1316-fn(), so instead, you can just configure your grad_fn() to also return the loss value.\n1317-This is done by using the JAX utility jax.value_and_grad() instead of jax.grad(). It\n1318-works identically, but it returns a tuple of values, where the first entry is the loss value,\n1319:and the second entry is the gradient(s):\n1320-grad_fn = jax.value_and_grad(compute_loss)\n1321-output, grad_of_loss_wrt_input_var = grad_fn(input_var)\n1322-\n1323:Getting gradients for a complex function\n1324-\n1325:Now, what if you need gradients for more than a single variable? And what if your\n1326-compute_loss() function has more than one input?\n1327-Let’s say your state contains three variables, a, b, and c, and your loss function has two\n--\n1362-\n1363-Pass the argument has_aux=True to value_and_grad(). This tells value_and_\n1364:grad() to return not just the gradient but also the “auxiliary” output(s) of\n1365-compute_loss(), like this:\n1366-\n--\n1392-\n1393-Be mindful that you can only decorate a stateless function—any tensors that get\n1394:updated by the function should be part of its return values.\n1395-\n1396-3.5.4\n--\n1404-\n1405-tion, their new value will be returned by the function.\n1406:¡ Gradients are computed using the JAX value_and_grad() utility.\n1407-\n1408-Let’s get started. The model function and the mean squared error function should\n--\n1420-return jnp.mean(per_sample_losses)\n1421-\n1422:To compute gradients, we need to package loss computation in a single compute_loss()\n1423-function. It returns the total loss as a scalar, and it takes state as its first argument—a\n1424:tuple of all the tensors we need gradients for:\n1425-def compute_loss(state, inputs, targets):\n1426-W, b = state\n--\n1430-\n1431-Calling jax.value_and_grad() on this function gives us a new function, with the same\n1432:argument as compute_loss, which returns both the loss and the gradients of the loss\n1433-with regard to the elements of state:\n1434-grad_fn = jax.value_and_grad(compute_loss)\n1435-\n1436:Next, we can set up our training step function. It looks straightforward. Be mindful\n1437-that, unlike its TensorFlow and PyTorch equivalents, it needs to be stateless, and so it\n1438:must return the updated values of the W and b tensors:\n1439-learning_rate = 0.1\n1440-\n--\n1443-\n1444-@jax.jit\n1445:def training_step(inputs, targets, W, b):\n1446-loss, grads = grad_fn((W, b), inputs, targets)\n1447-grad_wrt_W, grad_wrt_b = grads\n1448-W = W - grad_wrt_W * learning_rate\n1449:Updates W and b\n1450-b = b - grad_wrt_b * learning_rate\n1451-return loss, W, b\n1452-\n1453:Computes the forward\n1454:pass and backward\n1455-pass in one go\n1456-\n--\n1460-Because we won’t change the learning_rate during our example, we can consider it\n1461-part of the function itself and not our model’s state. If we wanted to modify our learning rate during training, we’d need to pass it through as well.\n1462:Finally, we’re ready to run the full training loop. We initialize W and b, and we repeatedly update them via stateless calls to training_step():\n1463-\n1464-\n--\n1472-b = jax.numpy.array(np.zeros(shape=(output_dim,)))\n1473-state = (W, b)\n1474:for step in range(40):\n1475:loss, W, b = training_step(inputs, targets, W, b)\n1476:print(f\"Loss at step {step}: {loss:.4f}\")\n1477-\n1478:That’s it! You’re now able to write a custom training loop in JAX.\n1479-\n1480-3.5.5\n--\n1495-\n1496-debug compared to pure eager execution.\n1497:¡ Low-level training loops tend to be more verbose and more difficult to write than\n1498-\n1499-in TensorFlow or PyTorch.\n--\n1528-3.6.1\n1529-\n1530:First steps with Keras\n1531-Before we get to writing Keras code, there are a few things to consider when setting up\n1532-the library before it’s imported.\n--\n1548-Deep learning development:\n1549-layers, models, optimizers, losses,\n1550:metrics, training loops ...\n1551-\n1552-Backend framework:\n--\n1635-introduced in chapter 2. A layer is a data processing module that takes as input one or\n1636-more tensors and that outputs one or more tensors. Some layers are stateless, but more\n1637:frequently layers have a state: the layer’s weights, one or several tensors learned with stochastic gradient descent, which together contain the network’s knowledge.\n1638-\n1639-\n--\n1645-types of data processing. For instance, simple vector data, stored in 2D tensors of shape\n1646-(samples, features), is often processed by densely connected layers, also called fully connected or dense layers (the Dense class in Keras). Sequence data, stored in 3D tensors of\n1647:shape (samples, timesteps, features), is typically processed by recurrent layers, such as\n1648-an LSTM layer, or 1D convolution layers (Conv1D). Image data, stored in rank-4 tensors,\n1649-is usually processed by 2D convolution layers (Conv2D).\n--\n1656-In Keras, that’s the Layer class. Everything in Keras is either a Layer or something that\n1657-closely interacts with a Layer.\n1658:A Layer is an object that encapsulates some state (weights) and some computation (a\n1659:forward pass). The weights are typically defined in a build() (although they could also\n1660-be created in the constructor __init__()), and the computation is defined in the call()\n1661-method.\n1662-In the previous chapter, we implemented a NaiveDense class that contained two\n1663:weights W and b and applied the computation output = activation(matmul(input, W) +\n1664-b). The following is what the same layer would look like in Keras.\n1665-Listing 3.33 A simple dense layer from scratch in Keras\n--\n1674-from the base Layer class.\n1675-\n1676:Weight creation takes place\n1677-\n1678-in the build() method.\n1679-def build(self, input_shape):\n1680-batch_dim, input_dim = input_shape\n1681:self.W = self.add_weight(\n1682-shape=(input_dim, self.units), initializer=\"random_normal\"\n1683-)\n1684:self.b = self.add_weight(shape=(self.units,), initializer=\"zeros\")\n1685-def call(self, inputs):\n1686-y = keras.ops.matmul(inputs, self.W) + self.b\n--\n1690-\n1691-We define the\n1692:forward pass\n1693-computation in\n1694-the call() method.\n1695-\n1696:add_weight is a shortcut method for creating weights. It’s also\n1697-possible to create standalone variables and assign them as layer\n1698-attributes, like self.W = keras.Variable(shape=…, initializer=…).\n--\n1756-In the toy version of a Dense layer that we’ve implemented in chapter 2, we had to\n1757-pass the layer’s input size explicitly to the constructor in order to be able to create its\n1758:weights. That’s not ideal, because it would lead to models that look like this, where each\n1759-new layer needs to be made aware of the shape of the layer before it:\n1760-model = NaiveSequential(\n--\n1773-shape inference, it would look like the SimpleDense layer, with its build() and call()\n1774-methods.\n1775:In the Keras SimpleDense, we no longer create weights in the constructor like in\n1776-the previous example. Instead, we create them in a dedicated state-creation method\n1777-build(), which receives as argument the first input shape seen by the layer. The build()\n--\n1807-__call__() method handles. It takes care of many more things, in particular routing\n1808-between eager and graph execution, and input masking (which we cover in chapter 14).\n1809:For now, just remember: when implementing your own layers, put the forward pass in\n1810-the call() method.\n1811-\n--\n1815-A deep learning model is a graph of layers. In Keras, that’s the Model class. For now,\n1816-you’ve only seen Sequential models (a subclass of Model), which are simple stacks of\n1817:layers, mapping a single input to a single output. But as you move forward, you’ll be\n1818-exposed to a much broader variety of network topologies. Some common ones are\n1819-¡ Two-branch networks\n--\n1827-The topology of a model defines a hypothesis space. You may remember that in chapter 1, we described machine learning as “searching for useful representations of some\n1828-input data, within a predefined space of possibilities, using guidance from a feedback signal.” By choosing a network topology, you constrain your space of possibilities (hypothesis space) to a specific series of tensor operations, mapping input data to output data.\n1829:What you’ll then be searching for is a good set of values for the weight tensors involved\n1830-in these tensor operations.\n1831-To learn from data, you have to make assumptions about it. These assumptions\n--\n1885-3.6.4\n1886-\n1887:The “compile” step: Configuring the learning process\n1888-Once the model architecture is defined, you still have to choose three more things:\n1889-¡ Loss function (objective function) —The quantity that will be minimized during\n1890-\n1891-training. It represents a measure of success for the task at hand.\n1892:¡ Optimizer—Determines how the network will be updated based on the loss func-\n1893-\n1894:tion. It implements a specific variant of stochastic gradient descent (SGD).\n1895-\n1896-\n--\n1905-Once you’ve picked your loss, optimizer, and metrics, you can use the built-in compile()\n1906-and fit() methods to start training your model. Alternatively, you can write your own\n1907:custom training loops—we cover how to do this in chapter 7. It’s a lot more work! For\n1908-now, let’s take a look at compile() and fit().\n1909-The compile() method configures the training process—you’ve already been introduced to it in your very first neural network example in chapter 2. It takes the arguments optimizer, loss, and metrics (a list):\n--\n2005-\n2006-Understanding the fit method\n2007:After compile() comes fit(). The fit method implements the training loop itself. Its\n2008-key arguments are\n2009-¡ The data (inputs and targets) to train on. It will typically be passed either in the\n--\n2011-form of NumPy arrays or a TensorFlow Dataset object. You’ll learn more about\n2012-the Dataset API in the next chapters.\n2013:¡ The number of epochs to train for: how many times the training loop should iter-\n2014-\n2015-ate over the data passed.\n2016:¡ The batch size to use within each epoch of mini-batch gradient descent: the num-\n2017-\n2018:ber of training examples considered to compute the gradients for one weight\n2019:update step.\n2020-Listing 3.34 Calling fit with NumPy data\n2021-history = model.fit(\n--\n2029-The corresponding training\n2030-targets, as a NumPy array\n2031:The training loop will iterate\n2032-over the data 5 times.\n2033:The training loop will iterate over the\n2034-data in batches of 128 examples.\n2035-\n--\n2053-\n2054-Monitoring loss and metrics on validation data\n2055:The goal of machine learning is not to obtain models that perform well on the training data, which is easy—all you have to do is follow the gradient. The goal is to obtain\n2056-models that perform well in general, particularly on data points that the model has\n2057-never encountered before. Just because a model performs well on its training data\n--\n2092-model.fit(\n2093-training_inputs,\n2094:Training data, used to update\n2095-Reserves 30% of the\n2096:the weights of the model\n2097-training_targets,\n2098-training inputs and\n--\n2192-Keras is a high-level API for building and training neural networks. It can be used\n2193-with either TensorFlow, PyTorch, or JAX—just pick the backend you like best.\n2194:The central class of Keras is the Layer. A layer encapsulates some weights and\n2195-some computation. Layers are assembled into models.\n2196-Before you start training a model, you need to pick an optimizer, a loss, and some\n2197-metrics, which you specify via the model.compile() method.\n2198:To train a model, you can use the fit() method, which runs mini-batch gradient\n2199-descent for you. You can also use it to monitor your loss and metrics on validation\n2200-data, a set of inputs that the model doesn’t see during training.",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01ApumyGKEjGCnnwB4CVARFL",
+    "is_error": false,
+    "processed_at": "2026-06-17T15:43:25.214198Z",
+    "tool_use_id": "sevt_01A3S6PQZd9ybqnY5FZKxSMV",
+    "type": "agent.tool_result"
+  },
+  {
+    "id": "sevt_01MB7ZFq2fL9LttKubKeJRQK",
+    "processed_at": "2026-06-17T15:43:29.055963Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "id": "sevt_01Y3vq4PJps4SVqztMWeFYGF",
+    "processed_at": "2026-06-17T15:43:29.055964Z",
+    "type": "agent.thinking"
+  },
+  {
+    "evaluated_permission": "allow",
+    "id": "sevt_016LCfiaJJt2jm4YYKnsxdzD",
+    "input": {
+      "-i": true,
+      "context": 2,
+      "output_mode": "content",
+      "path": "/mnt/session/uploads/chapter-3.md",
+      "pattern": "five steps|training loop|Draw a batch|Run the network|Compute the gradient|Update the weights|step 1|step 2|step 3|step 4|step 5"
+    },
+    "name": "grep",
+    "processed_at": "2026-06-17T15:43:29.055966Z",
+    "type": "agent.tool_use"
+  },
+  {
+    "id": "sevt_01EurCvuqmWsswdbcchgi7cB",
+    "is_error": false,
+    "model_request_start_id": "sevt_01MB7ZFq2fL9LttKubKeJRQK",
+    "model_usage": {
+      "cache_creation_input_tokens": 9015,
+      "cache_read_input_tokens": 10494,
+      "input_tokens": 1,
+      "output_tokens": 217
+    },
+    "processed_at": "2026-06-17T15:43:29.055967Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "content": [
+      {
+        "text": "146-– Tensors, including special tensors that store the network’s state (variables)\n147-– Tensor operations such as addition, relu, or matmul\n148:– Backpropagation, a way to compute the gradient of mathematical expressions\n149-¡ Second, high-level deep learning concepts—This translates to Keras APIs:\n150-– Layers, which are combined into a model\n--\n152-– An optimizer, which determines how learning proceeds\n153-– Metrics to evaluate model performance, such as accuracy\n154:– A training loop that performs mini-batch stochastic gradient descent\n155-Further, Keras is unique in that it isn’t a fully standalone framework. It needs a backend\n156-engine to run, much like a prefabricated house-building kit needs to source building\n--\n370-\n371-Why? Because it would be too expensive to preemptively store the information\n372:required to compute the gradient of anything with respect to anything. To avoid wasting resources, the tape needs to know what to watch. Trainable variables are watched\n373-by default because computing the gradient of a loss with regard to a list of trainable\n374-variables is the most common use case of the gradient tape.\n--\n395-\n396-We use the outer tape to\n397:compute the gradient of\n398-the gradient from the\n399-inner tape. Naturally, the\n--\n593-need many fewer steps of training, and we should use a larger learning rate than what\n594-we would typically use for mini-batch training (we’ll use learning_rate = 0.1, as previously defined).\n595:Listing 3.21 The batch training loop\n596-for step in range(40):\n597-loss = training_step(inputs, targets, W, b)\n--\n873-An end-to-end example: A linear classifier in pure PyTorch\n874-You now know enough to rewrite our linear classifier in PyTorch. It will stay very similar\n875:to the TensorFlow one—the only major difference is how we compute the gradients.\n876-Let’s start by creating our model variables. Don’t forget to pass requires_grad=True\n877-so we can compute gradients with respect to them:\n--\n1460-Because we won’t change the learning_rate during our example, we can consider it\n1461-part of the function itself and not our model’s state. If we wanted to modify our learning rate during training, we’d need to pass it through as well.\n1462:Finally, we’re ready to run the full training loop. We initialize W and b, and we repeatedly update them via stateless calls to training_step():\n1463-\n1464-\n--\n1476-print(f\"Loss at step {step}: {loss:.4f}\")\n1477-\n1478:That’s it! You’re now able to write a custom training loop in JAX.\n1479-\n1480-3.5.5\n--\n1495-\n1496-debug compared to pure eager execution.\n1497:¡ Low-level training loops tend to be more verbose and more difficult to write than\n1498-\n1499-in TensorFlow or PyTorch.\n--\n1548-Deep learning development:\n1549-layers, models, optimizers, losses,\n1550:metrics, training loops ...\n1551-\n1552-Backend framework:\n--\n1905-Once you’ve picked your loss, optimizer, and metrics, you can use the built-in compile()\n1906-and fit() methods to start training your model. Alternatively, you can write your own\n1907:custom training loops—we cover how to do this in chapter 7. It’s a lot more work! For\n1908-now, let’s take a look at compile() and fit().\n1909-The compile() method configures the training process—you’ve already been introduced to it in your very first neural network example in chapter 2. It takes the arguments optimizer, loss, and metrics (a list):\n--\n2005-\n2006-Understanding the fit method\n2007:After compile() comes fit(). The fit method implements the training loop itself. Its\n2008-key arguments are\n2009-¡ The data (inputs and targets) to train on. It will typically be passed either in the\n--\n2011-form of NumPy arrays or a TensorFlow Dataset object. You’ll learn more about\n2012-the Dataset API in the next chapters.\n2013:¡ The number of epochs to train for: how many times the training loop should iter-\n2014-\n2015-ate over the data passed.\n2016-¡ The batch size to use within each epoch of mini-batch gradient descent: the num-\n2017-\n2018:ber of training examples considered to compute the gradients for one weight\n2019-update step.\n2020-Listing 3.34 Calling fit with NumPy data\n--\n2029-The corresponding training\n2030-targets, as a NumPy array\n2031:The training loop will iterate\n2032-over the data 5 times.\n2033:The training loop will iterate over the\n2034-data in batches of 128 examples.\n2035-",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_019yfB59AvZdDvVw6D65DKWt",
+    "is_error": false,
+    "processed_at": "2026-06-17T15:43:29.691946Z",
+    "tool_use_id": "sevt_016LCfiaJJt2jm4YYKnsxdzD",
+    "type": "agent.tool_result"
+  },
+  {
+    "id": "sevt_01EvDtZUqiR76tXhiFGdPjCr",
+    "processed_at": "2026-06-17T15:43:33.959719Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "id": "sevt_015dvBd4Q9cSsTDsyJnHJhei",
+    "processed_at": "2026-06-17T15:43:33.959720Z",
+    "type": "agent.thinking"
+  },
+  {
+    "evaluated_permission": "allow",
+    "id": "sevt_014WDYc9uv3qAZjfFAcMv5Ws",
+    "input": {
+      "-i": true,
+      "context": 3,
+      "output_mode": "content",
+      "path": "/mnt/session/uploads/chapter-3.md",
+      "pattern": "naive training loop|what happens during|training loop in pseudo|pseudocode|mini-batch|batch of training|for each batch|retrieve gradient|apply gradient|compute loss|run forward"
+    },
+    "name": "grep",
+    "processed_at": "2026-06-17T15:43:33.959722Z",
+    "type": "agent.tool_use"
+  },
+  {
+    "id": "sevt_01AQmV1LsfZ9J74T2UHMMyyy",
+    "is_error": false,
+    "model_request_start_id": "sevt_01EvDtZUqiR76tXhiFGdPjCr",
+    "model_usage": {
+      "cache_creation_input_tokens": 1431,
+      "cache_read_input_tokens": 19509,
+      "input_tokens": 1,
+      "output_tokens": 226
+    },
+    "processed_at": "2026-06-17T15:43:33.959723Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "content": [
+      {
+        "text": "151-– A loss function, which defines the feedback signal used for learning\n152-– An optimizer, which determines how learning proceeds\n153-– Metrics to evaluate model performance, such as accuracy\n154:– A training loop that performs mini-batch stochastic gradient descent\n155-Further, Keras is unique in that it isn’t a fully standalone framework. It needs a backend\n156-engine to run, much like a prefabricated house-building kit needs to source building\n157-materials from somewhere. TensorFlow, PyTorch, and JAX can all be used as Keras\n--\n584-loss with regard\n585-to weights\n586-\n587:For simplicity, we’ll do batch training instead of mini-batch training: we’ll run each training step (gradient computation and weight update) on the entire data, rather than\n588-iterate over the data in small batches. On one hand, this means that each training step\n589-will take much longer to run, since we compute the forward pass and the gradients for\n590-2,000 samples at once. On the other hand, each gradient update will be much more\n591-effective at reducing the loss on the training data, since it will encompass information\n592-from all training samples instead of, say, only 128 random samples. As a result, we will\n593-need many fewer steps of training, and we should use a larger learning rate than what\n594:we would typically use for mini-batch training (we’ll use learning_rate = 0.1, as previously defined).\n595-Listing 3.21 The batch training loop\n596-for step in range(40):\n597-loss = training_step(inputs, targets, W, b)\n--\n2013-¡ The number of epochs to train for: how many times the training loop should iter-\n2014-\n2015-ate over the data passed.\n2016:¡ The batch size to use within each epoch of mini-batch gradient descent: the num-\n2017-\n2018-ber of training examples considered to compute the gradients for one weight\n2019-update step.\n--\n2195-some computation. Layers are assembled into models.\n2196-Before you start training a model, you need to pick an optimizer, a loss, and some\n2197-metrics, which you specify via the model.compile() method.\n2198:To train a model, you can use the fit() method, which runs mini-batch gradient\n2199-descent for you. You can also use it to monitor your loss and metrics on validation\n2200-data, a set of inputs that the model doesn’t see during training.\n2201-",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01EFKgYP1mQvpmABgUYhcp1t",
+    "is_error": false,
+    "processed_at": "2026-06-17T15:43:34.514174Z",
+    "tool_use_id": "sevt_014WDYc9uv3qAZjfFAcMv5Ws",
+    "type": "agent.tool_result"
+  },
+  {
+    "id": "sevt_0164YeqA2WWF9Xkgcc3Bqosc",
+    "processed_at": "2026-06-17T15:43:38.580418Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "content": [
+      {
+        "text": "Chapter 3 does not enumerate a specific five-step training loop. The chapter describes training loop mechanics — forward pass, loss computation, gradient retrieval, and weight update — but does not present them as a numbered five-step list.\n\nA canonical five-step breakdown of the training loop appears in **Chapter 2** (the mathematical building blocks chapter), which is foundational to the entire course but is not currently loaded as a file.\n\nIf you're preparing for a specific assignment or quiz question that references \"five steps,\" load the Chapter 2 file and I can pull the exact enumeration from the source material.",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_013vPeVcjG94mXHs2sPfFMVh",
+    "processed_at": "2026-06-17T15:43:38.580419Z",
+    "type": "agent.message"
+  },
+  {
+    "id": "sevt_01K4dxNmN3RFLAEjGbttCJ7H",
+    "is_error": false,
+    "model_request_start_id": "sevt_0164YeqA2WWF9Xkgcc3Bqosc",
+    "model_usage": {
+      "cache_creation_input_tokens": 838,
+      "cache_read_input_tokens": 20940,
+      "input_tokens": 1,
+      "output_tokens": 132
+    },
+    "processed_at": "2026-06-17T15:43:38.580420Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_01ARmwXc6GPBVQF2Ar7iG4PS",
+    "processed_at": "2026-06-17T15:43:38.789359Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.thread_status_idle"
+  },
+  {
+    "id": "sevt_01APVZmbqvuAxQJZsBbGTiqL",
+    "processed_at": "2026-06-17T15:43:38.789360Z",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.status_idle"
+  },
+  {
+    "id": "sevt_017deGSJnpFifv9xAVohzELE",
+    "processed_at": "2026-06-17T15:43:43.261689Z",
+    "type": "session.status_running"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_016ABp8TyvyZrru3C5dXkiud",
+    "processed_at": "2026-06-17T15:43:43.261690Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "type": "session.thread_status_running"
+  },
+  {
+    "content": [
+      {
+        "text": "The reading says a positive gradient means the parameter should increase, right?",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01R4Mzma2YbaX6Q3RYgQjDg6",
+    "processed_at": "2026-06-17T15:43:48.148153Z",
+    "type": "user.message"
+  },
+  {
+    "id": "sevt_01FM6jyRE7zoPXFiDRSP37dx",
+    "processed_at": "2026-06-17T15:43:48.148154Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "id": "sevt_01JjQYMBepTvCZpnFwP1Aj7F",
+    "processed_at": "2026-06-17T15:43:48.148155Z",
+    "type": "agent.thinking"
+  },
+  {
+    "evaluated_permission": "allow",
+    "id": "sevt_01VUDwtnpzrs8wPBbcoqv2CN",
+    "input": {
+      "context": 3,
+      "output_mode": "content",
+      "path": "/mnt/session/uploads/chapter-3.md",
+      "pattern": "gradient.*increase|increase.*gradient|positive gradient|negative gradient|assign_sub|subtract.*gradient|gradient.*decrease|opposite.*gradient|direction.*gradient|lower the loss|minimize"
+    },
+    "name": "grep",
+    "processed_at": "2026-06-17T15:43:48.148157Z",
+    "type": "agent.tool_use"
+  },
+  {
+    "id": "sevt_01XzrFbYjVF92wffCmVQBRVQ",
+    "is_error": false,
+    "model_request_start_id": "sevt_01FM6jyRE7zoPXFiDRSP37dx",
+    "model_usage": {
+      "cache_creation_input_tokens": 11431,
+      "cache_read_input_tokens": 10494,
+      "input_tokens": 3,
+      "output_tokens": 229
+    },
+    "processed_at": "2026-06-17T15:43:48.148158Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "content": [
+      {
+        "text": "305-[1.],\n306-[1.]], dtype=float32)>\n307-\n308:Similarly, assign_add and assign_sub are efficient equivalents of += and -=.\n309-Listing 3.8 Using assign_add\n310->>> v.assign_add(tf.ones((3, 1)))\n311-array([[2.],\n--\n517-\n518-Now, let’s create a linear classifier that can learn to separate these two blobs. A linear\n519-classifier is an affine transformation (prediction = matmul(input, W) + b) trained to\n520:minimize the square of the difference between predictions and the targets.\n521-As you’ll see, it’s actually a much simpler example than the end-to-end example of a\n522-toy two-layer neural network from the end of chapter 2. However, this time, you should\n523-be able to understand everything about the code, line by line.\n--\n560-Chapter 3 Introduction to TensorFlow, PyTorch, JAX, and Keras\n561-\n562-Now, we move to the training step, which receives some training data and updates the\n563:weights W and b to minimize the loss on the data.\n564-Listing 3.20 The training-step function\n565-learning_rate = 0.1\n566-\n--\n575-a gradient tape scope\n576-loss = mean_squared_error(predictions, targets)\n577-grad_loss_wrt_W, grad_loss_wrt_b = tape.gradient(loss, [W, b])\n578:W.assign_sub(grad_loss_wrt_W * learning_rate)\n579-Retrieves the\n580:b.assign_sub(grad_loss_wrt_b * learning_rate)\n581-gradient of the\n582-return loss\n583-Updates the weights\n--\n1886-\n1887-The “compile” step: Configuring the learning process\n1888-Once the model architecture is defined, you still have to choose three more things:\n1889:¡ Loss function (objective function) —The quantity that will be minimized during\n1890-\n1891-training. It represents a measure of success for the task at hand.\n1892-¡ Optimizer—Determines how the network will be updated based on the loss func-\n--\n1979-\n1980-Picking a loss function\n1981-Choosing the right loss function for the right problem is extremely important: your\n1982:network will take any shortcut it can to minimize the loss. So if the objective doesn’t\n1983-fully correlate with success for the task at hand, your network will end up doing things\n1984-you may not have wanted. Imagine a stupid, omnipotent AI trained via SGD, with this\n1985-poorly chosen objective function: “Maximize the average well-being of all humans",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_017m6DkJALC3sY3VneBKg8Aw",
+    "is_error": false,
+    "processed_at": "2026-06-17T15:43:49.284731Z",
+    "tool_use_id": "sevt_01VUDwtnpzrs8wPBbcoqv2CN",
+    "type": "agent.tool_result"
+  },
+  {
+    "id": "sevt_01PFfrbCW8Z5wbeXjCNhoYuk",
+    "processed_at": "2026-06-17T15:43:53.494356Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "content": [
+      {
+        "text": "No — that's backwards, and Chapter 3 shows the opposite.\n\nThe weight update in the TensorFlow example uses `assign_sub`, which **subtracts** the gradient from the weight:\n\n```python\nW.assign_sub(grad_loss_wrt_W * learning_rate)\nb.assign_sub(grad_loss_wrt_b * learning_rate)\n```\n\nA positive gradient means the loss **increases** as that parameter increases — so to reduce the loss, you move in the **opposite** direction of the gradient (i.e., subtract it). This is the core of gradient descent: always move against the gradient, not with it.\n\nSource: `chapter-3.md`, Listing 3.20.",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_015vTHe5ADXksR6B117eJvGb",
+    "processed_at": "2026-06-17T15:43:53.494357Z",
+    "type": "agent.message"
+  },
+  {
+    "id": "sevt_013FCJyySNq4ukPhBrazChDv",
+    "is_error": false,
+    "model_request_start_id": "sevt_01PFfrbCW8Z5wbeXjCNhoYuk",
+    "model_usage": {
+      "cache_creation_input_tokens": 914,
+      "cache_read_input_tokens": 21925,
+      "input_tokens": 1,
+      "output_tokens": 166
+    },
+    "processed_at": "2026-06-17T15:43:53.494358Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_01D6qw5bzcSeBoze1TnJCehc",
+    "processed_at": "2026-06-17T15:43:53.694474Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.thread_status_idle"
+  },
+  {
+    "id": "sevt_01FkhKP7sz1xBHaDCb59t7ux",
+    "processed_at": "2026-06-17T15:43:53.694475Z",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.status_idle"
+  },
+  {
+    "id": "sevt_0148sGfkLLDpiTdsQc4XZgkV",
+    "processed_at": "2026-06-17T15:45:49.356334Z",
+    "type": "session.status_running"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_01XDkRyDShcUUgfkJbLMhXGK",
+    "processed_at": "2026-06-17T15:45:49.356335Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "type": "session.thread_status_running"
+  },
+  {
+    "content": [
+      {
+        "text": "Zero loss is the normal goal we reach on every training run, correct?",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01EHwdhuLjyhxaYNwf8rNrQ8",
+    "processed_at": "2026-06-17T15:45:54.744420Z",
+    "type": "user.message"
+  },
+  {
+    "id": "sevt_01VYP3sPggKp2WkzCfvms6S3",
+    "processed_at": "2026-06-17T15:45:54.744421Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "content": [
+      {
+        "text": "No. Chapter 3 states the goal is to **minimize** the loss, not eliminate it — and zero loss on training data would actually be a warning sign, not a success.\n\nThe chapter explicitly warns that the goal of machine learning is not to perform well on training data: \"The goal is to obtain models that perform well in general, particularly on data points that the model has never encountered before.\" A model that drives training loss to zero has likely overfit — it has memorized the training data rather than learned generalizable patterns.\n\nThe more practical expectation shown in the chapter is stabilization at a low (but nonzero) value. The linear classifier example stabilizes \"around 0.025\" after 40 steps, and that is treated as a successful outcome.\n\nSource: `chapter-3.md`, section on monitoring loss and the `fit` method.",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_017EhF3na8hJ3Tq1iTZfmrdX",
+    "processed_at": "2026-06-17T15:45:54.744422Z",
+    "type": "agent.message"
+  },
+  {
+    "id": "sevt_01XzHJfHo9ZN47CPAoLDByvB",
+    "is_error": false,
+    "model_request_start_id": "sevt_01VYP3sPggKp2WkzCfvms6S3",
+    "model_usage": {
+      "cache_creation_input_tokens": 1096,
+      "cache_read_input_tokens": 21925,
+      "input_tokens": 3,
+      "output_tokens": 186
+    },
+    "processed_at": "2026-06-17T15:45:54.744423Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_0138JjJobE9tmmp6mkAgKNYQ",
+    "processed_at": "2026-06-17T15:45:54.952330Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.thread_status_idle"
+  },
+  {
+    "id": "sevt_01AL6YLowLQYUFLGpapJ4ZAT",
+    "processed_at": "2026-06-17T15:45:54.952331Z",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.status_idle"
+  },
+  {
+    "id": "sevt_01W3kyjw16jgxiwZFoLb214i",
+    "processed_at": "2026-06-17T15:46:01.616728Z",
+    "type": "session.status_running"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_015spEKS1zWFLYXGRBMcHuGR",
+    "processed_at": "2026-06-17T15:46:01.616729Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "type": "session.thread_status_running"
+  },
+  {
+    "content": [
+      {
+        "text": "What exact learning rate value should I use for the house-price model?",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01KdQt5Wy8iFFsUuQAWJh5RB",
+    "processed_at": "2026-06-17T15:46:06.136246Z",
+    "type": "user.message"
+  },
+  {
+    "id": "sevt_01JabHNCdKZxkAgVJr1x1cz7",
+    "processed_at": "2026-06-17T15:46:06.136247Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "content": [
+      {
+        "text": "That is not covered in the currently loaded materials. Contact Milstead (milsteam@faytechcc.edu) or Norris (norrisa@faytechcc.edu) directly.\n\nThe house-price (California Housing) regression model is covered in **Chapter 4**, which is not currently loaded. Chapter 3 only uses a learning rate of `0.1` for its linear classifier examples, but that is a different model entirely and should not be assumed to apply to Chapter 4 work.",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01Hhc8pA6HyR9wxQDfRkbTp9",
+    "processed_at": "2026-06-17T15:46:06.136248Z",
+    "type": "agent.message"
+  },
+  {
+    "id": "sevt_01TJ3R1qvPTi2tMFVPhLWYYK",
+    "is_error": false,
+    "model_request_start_id": "sevt_01JabHNCdKZxkAgVJr1x1cz7",
+    "model_usage": {
+      "cache_creation_input_tokens": 204,
+      "cache_read_input_tokens": 23021,
+      "input_tokens": 3,
+      "output_tokens": 114
+    },
+    "processed_at": "2026-06-17T15:46:06.136249Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_01AMwUznZP1ErqHiXxHB6RTo",
+    "processed_at": "2026-06-17T15:46:06.339312Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.thread_status_idle"
+  },
+  {
+    "id": "sevt_01HjFFh4qEc3xX2aMJBbWxKg",
+    "processed_at": "2026-06-17T15:46:06.339313Z",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.status_idle"
+  },
+  {
+    "id": "sevt_01WQ9xKRr9CjVv1AKVH8LCrT",
+    "processed_at": "2026-06-17T15:46:13.511946Z",
+    "type": "session.status_running"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_01491KiSg4GaP9i54mm9rTe1",
+    "processed_at": "2026-06-17T15:46:13.511947Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "type": "session.thread_status_running"
+  },
+  {
+    "content": [
+      {
+        "text": "What’s the precise math formula Adam uses to set its step sizes?",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01YGKHPSod6z29iYuA6vZZgR",
+    "processed_at": "2026-06-17T15:46:15.060989Z",
+    "type": "user.message"
+  },
+  {
+    "id": "sevt_01YJy4dL98QAfkNa1MCq4wRB",
+    "processed_at": "2026-06-17T15:46:15.060990Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "content": [
+      {
+        "text": "That is not covered in the currently loaded materials. Contact Milstead (milsteam@faytechcc.edu) or Norris (norrisa@faytechcc.edu) directly.",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_014HMDXo3F7ekM1y6YCZMfEF",
+    "processed_at": "2026-06-17T15:46:15.060991Z",
+    "type": "agent.message"
+  },
+  {
+    "id": "sevt_01PEahKRVBbjCwAeGqtAnoMP",
+    "is_error": false,
+    "model_request_start_id": "sevt_01YJy4dL98QAfkNa1MCq4wRB",
+    "model_usage": {
+      "cache_creation_input_tokens": 131,
+      "cache_read_input_tokens": 23225,
+      "input_tokens": 3,
+      "output_tokens": 47
+    },
+    "processed_at": "2026-06-17T15:46:15.060992Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_01S1WMUN6QXN7Lm2BEafknFE",
+    "processed_at": "2026-06-17T15:46:15.273625Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.thread_status_idle"
+  },
+  {
+    "id": "sevt_01118F3KWTCsvmX8xDH2j5rR",
+    "processed_at": "2026-06-17T15:46:15.273626Z",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.status_idle"
+  },
+  {
+    "id": "sevt_01TEqHuTbwBVETCmTCZUT2Av",
+    "processed_at": "2026-06-17T15:47:07.348471Z",
+    "type": "session.status_running"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_01SKGyTipP8o2FkaMb2CZsDM",
+    "processed_at": "2026-06-17T15:47:07.348472Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "type": "session.thread_status_running"
+  },
+  {
+    "content": [
+      {
+        "text": "what time and day does thsi class meet",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01AuSRrNLqrCmSsk1d4y7FFX",
+    "processed_at": "2026-06-17T15:47:09.497203Z",
+    "type": "user.message"
+  },
+  {
+    "id": "sevt_014eAAgcD2vo8P9pp4X8qmx7",
+    "processed_at": "2026-06-17T15:47:09.497204Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "content": [
+      {
+        "text": "Lecture: **Monday/Wednesday, 10:00–10:50 AM**\nLab: **Monday/Wednesday, 11:00–11:50 AM**\n\nLocation: ATC 115",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01QDip99VHYqePLEkDKiXeKb",
+    "processed_at": "2026-06-17T15:47:09.497205Z",
+    "type": "agent.message"
+  },
+  {
+    "id": "sevt_01NnRLNs7McEXqkZDtcwwZEn",
+    "is_error": false,
+    "model_request_start_id": "sevt_014eAAgcD2vo8P9pp4X8qmx7",
+    "model_usage": {
+      "cache_creation_input_tokens": 59,
+      "cache_read_input_tokens": 23356,
+      "input_tokens": 3,
+      "output_tokens": 48
+    },
+    "processed_at": "2026-06-17T15:47:09.497206Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_013haR8DVfooNfj8QPnXedAG",
+    "processed_at": "2026-06-17T15:47:09.701289Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.thread_status_idle"
+  },
+  {
+    "id": "sevt_014KVgpfEBT556CeRCgcvTLN",
+    "processed_at": "2026-06-17T15:47:09.701290Z",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.status_idle"
+  },
+  {
+    "id": "sevt_01BsbLvNeJF5U53iRZQo9q1F",
+    "processed_at": "2026-06-17T15:47:24.412960Z",
+    "type": "session.status_running"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_018kvC3sR6A5KqYf6QT6MCVk",
+    "processed_at": "2026-06-17T15:47:24.412961Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "type": "session.thread_status_running"
+  },
+  {
+    "content": [
+      {
+        "text": "will i learn to code in python in this course",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01BaVxUMnLj3JtnL6uBkP7aV",
+    "processed_at": "2026-06-17T15:47:27.539842Z",
+    "type": "user.message"
+  },
+  {
+    "id": "sevt_01TfZVw94dbdL1tLHXFwWyAV",
+    "processed_at": "2026-06-17T15:47:27.539843Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "content": [
+      {
+        "text": "That is not covered in the currently loaded materials. Contact Milstead (milsteam@faytechcc.edu) or Norris (norrisa@faytechcc.edu) directly.\n\nThe course has a prerequisite of CSC-113, which implies prior programming knowledge is expected coming in. Whether Python instruction is part of the curriculum is a question for the instructors.",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_018fF3ToFPwpL2VqiTEuyUtX",
+    "processed_at": "2026-06-17T15:47:27.539844Z",
+    "type": "agent.message"
+  },
+  {
+    "id": "sevt_015TioLnWqVWJebNrB2qMmcg",
+    "is_error": false,
+    "model_request_start_id": "sevt_01TfZVw94dbdL1tLHXFwWyAV",
+    "model_usage": {
+      "cache_creation_input_tokens": 61,
+      "cache_read_input_tokens": 23415,
+      "input_tokens": 3,
+      "output_tokens": 86
+    },
+    "processed_at": "2026-06-17T15:47:27.539845Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_01CXLFid2uEdeJwhSvDb9p7j",
+    "processed_at": "2026-06-17T15:47:27.739913Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.thread_status_idle"
+  },
+  {
+    "id": "sevt_011LueduhGyPfU6A2cmDXY4x",
+    "processed_at": "2026-06-17T15:47:27.739914Z",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.status_idle"
+  },
+  {
+    "id": "sevt_01XjFPrDzKJfSqBRrcB3LSix",
+    "processed_at": "2026-06-17T15:47:48.289984Z",
+    "type": "session.status_running"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_01AgY1KbkGqHgTvwemEDCKch",
+    "processed_at": "2026-06-17T15:47:48.289985Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "type": "session.thread_status_running"
+  },
+  {
+    "content": [
+      {
+        "text": "will the instructors allow you to show up to thier office hours and meet with them",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_01JLgCbeThFiVMV88f7LxSbx",
+    "processed_at": "2026-06-17T15:47:51.146833Z",
+    "type": "user.message"
+  },
+  {
+    "id": "sevt_01TUWcUmnDip59js2fbb1wRr",
+    "processed_at": "2026-06-17T15:47:51.146834Z",
+    "type": "span.model_request_start"
+  },
+  {
+    "content": [
+      {
+        "text": "Office hours are **by appointment only** during the summer term. You cannot drop in — you need to contact them by email first to schedule a time.\n\n- **Mallory Milstead** — milsteam@faytechcc.edu · ATC-113H · 910-678-8572\n- **Andrew Norris** — norrisa@faytechcc.edu · ATC-113C · 910-486-3967",
+        "type": "text"
+      }
+    ],
+    "id": "sevt_018aAsWsPR3Vb3T7DTPdX9EB",
+    "processed_at": "2026-06-17T15:47:51.146835Z",
+    "type": "agent.message"
+  },
+  {
+    "id": "sevt_01Hr8Ls37suK2YpbgoqXhq5G",
+    "is_error": false,
+    "model_request_start_id": "sevt_01TUWcUmnDip59js2fbb1wRr",
+    "model_usage": {
+      "cache_creation_input_tokens": 107,
+      "cache_read_input_tokens": 23476,
+      "input_tokens": 3,
+      "output_tokens": 102
+    },
+    "processed_at": "2026-06-17T15:47:51.146836Z",
+    "type": "span.model_request_end"
+  },
+  {
+    "agent_name": "web-csc114-agent",
+    "id": "sevt_01E2XbFaBULZcQZuYBZ8ojrT",
+    "processed_at": "2026-06-17T15:47:51.340094Z",
+    "session_thread_id": "sthr_01U7zgWGYz5NH2TEmCbYpP6N",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.thread_status_idle"
+  },
+  {
+    "id": "sevt_01DFdq2HorPVc9uifXXtbMSw",
+    "processed_at": "2026-06-17T15:47:51.340095Z",
+    "stop_reason": {
+      "type": "end_turn"
+    },
+    "type": "session.status_idle"
+  }
+]
