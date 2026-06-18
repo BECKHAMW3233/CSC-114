@@ -5,7 +5,7 @@ Custom OCR model trained to recognize handwritten and printed characters from sc
 
 **Recognizes:** digits 0–9, letters A–Z and a–z (62 classes total)  
 **Dataset:** EMNIST byclass — 814,255 samples (Cohen et al. 2017)  
-**Framework:** PyTorch 2.5+ with CUDA 12.1 (pure PyTorch) and Keras 3 on PyTorch backend  
+**Framework:** PyTorch 2.5.1 with CUDA 12.1 (pure PyTorch) and Keras 3 on PyTorch backend  
 
 ---
 
@@ -23,7 +23,7 @@ All architecture and training decisions are grounded in:
 | Ch. 7 | Functional API, compile/fit/evaluate, EarlyStopping, ModelCheckpoint, CSVLogger |
 | Ch. 8 | ConvNet architecture, MaxPooling, GlobalAveragePooling, filter progression, augmentation |
 | Ch. 9 | BatchNormalization, residual connections, depthwise separable convolutions |
-| Ch. 18 | Mixed-precision training, LossScaleOptimizer, KerasTuner/Optuna, model ensembling, int8 quantization |
+| Ch. 18 | Mixed-precision training, LossScaleOptimizer, Optuna BayesianOptimization, model ensembling, int8 quantization |
 
 ---
 
@@ -32,23 +32,39 @@ All architecture and training decisions are grounded in:
 |---|---|
 | CPU | AMD Ryzen 9 7900X @ 5.3 GHz (24 threads) |
 | RAM | 64 GB DDR5-5600 |
-| GPU | NVIDIA RTX 4080 16 GB |
-| OS | Windows 11 |
+| GPU | NVIDIA GeForce RTX 4080 16 GB |
+| NVIDIA Driver | 596.49 |
+| OS | Windows 11 (10.0.26200.8655) |
 
 Minimum to reproduce: any NVIDIA GPU with 8+ GB VRAM and CUDA 12.x support. CPU-only training works but will be significantly slower.
+
+---
+
+## Verified Package Versions
+| Package | Version |
+|---|---|
+| PyTorch | 2.5.1+cu121 |
+| torchvision | 0.20.1+cu121 |
+| CUDA | 12.1 |
+| cuDNN | 9.1.0 |
+| numpy | 1.26.4 |
+| matplotlib | 3.11.0 |
+| Pillow | 12.2.0 |
+| optuna | 4.9.0 |
+| Python | 3.12.10 |
 
 ---
 
 ## Repository Contents
 
 ```
-├── 01_install_cuda.bat           # Step 1 — CUDA 12.3 + cuDNN install guide (run as Admin)
+├── 01_install_cuda.bat            # Step 1 — CUDA 12.3 + cuDNN install guide (run as Admin)
 ├── 02_install_python_packages.bat # Step 2 — Python venv + all pip packages
-├── 03_verify_gpu.py              # Step 3 — confirms GPU is visible before training
-├── ocr_pytorch_model.py          # Pure PyTorch training pipeline (recommended)
-├── ocr_handwriting_model.py      # Keras 3 on PyTorch backend training pipeline
-├── .gitignore                    # excludes venv, datasets, and compiled files
-└── README.md                     # this file
+├── 03_verify_gpu.py               # Step 3 — confirms GPU is visible before training
+├── ocr_pytorch_model.py           # Pure PyTorch training pipeline (recommended)
+├── ocr_handwriting_model.py       # Keras 3 on PyTorch backend training pipeline
+├── .gitignore                     # excludes venv, datasets, and compiled files
+└── README.md                      # this file
 ```
 
 ---
@@ -57,7 +73,7 @@ Minimum to reproduce: any NVIDIA GPU with 8+ GB VRAM and CUDA 12.x support. CPU-
 
 ### Prerequisites
 - Windows 10/11 64-bit
-- Python 3.10 or 3.11 (3.12 not supported by TensorFlow; PyTorch supports 3.12)
+- Python 3.10, 3.11, or 3.12
 - NVIDIA GPU with CUDA 12.x support
 - ~15 GB free disk space for CUDA, packages, and dataset
 
@@ -66,16 +82,13 @@ Run as Administrator:
 ```
 01_install_cuda.bat
 ```
-This opens the CUDA 12.3 and cuDNN download pages with instructions on what to select and where to copy files. You will need a free NVIDIA developer account for cuDNN.
+Opens the CUDA 12.3 and cuDNN download pages with instructions on what to select and where to copy files. A free NVIDIA developer account is required for cuDNN.
 
 ### Step 2 — Install Python packages
 ```
 02_install_python_packages.bat
 ```
-Creates a virtual environment at `E:\CSC-114\emnist-model\venv\` and installs:
-- PyTorch 2.5+ with CUDA 12.1
-- TensorFlow 2.16+ (for Keras file)
-- Keras 3, KerasHub, torchmetrics, Optuna, matplotlib, pillow
+Creates a virtual environment at `E:\CSC-114\emnist-model\venv\` and installs all required packages including PyTorch with CUDA 12.1 support.
 
 > **Note:** Change the `BASE_DIR` path inside both `.py` files if you want output somewhere other than `E:\CSC-114\emnist-model\`
 
@@ -83,44 +96,52 @@ Creates a virtual environment at `E:\CSC-114\emnist-model\venv\` and installs:
 ```
 "E:\CSC-114\emnist-model\venv\Scripts\python.exe" 03_verify_gpu.py
 ```
-Must show your GPU name and `CUDA available: True` before proceeding.
 
 Quick PyTorch GPU check:
-```python
-import torch
-print(torch.cuda.is_available())        # must be True
-print(torch.cuda.get_device_name(0))    # must show your GPU
+```cmd
+"E:\CSC-114\emnist-model\venv\Scripts\python.exe" -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0))"
 ```
+
+Must return `True` and your GPU name before proceeding.
 
 ### Step 4 — Train
 **PyTorch version (recommended):**
-```
+```cmd
 "E:\CSC-114\emnist-model\venv\Scripts\python.exe" ocr_pytorch_model.py
 ```
 
 **Keras version:**
-```
+```cmd
 "E:\CSC-114\emnist-model\venv\Scripts\python.exe" ocr_handwriting_model.py
 ```
 
-First run downloads the EMNIST dataset (~540 MB) automatically. Subsequent runs use the cached copy.
+First run downloads EMNIST dataset (~540 MB) automatically to the datasets folder. Subsequent runs use the cached copy.
 
 ---
 
 ## What Happens During Training
 
 ```
+============================================================
+  EMNIST OCR — Pure PyTorch
+  PyTorch 2.5.1+cu121  |  AMP: True
+  Output: E:\CSC-114\emnist-model\pytorch
+============================================================
+[Device] NVIDIA GeForce RTX 4080  |  16.0 GB VRAM  |  CUDA 12.1  |  AMP: True
+[Dataset] Train: 593,243  |  Val: 104,689  |  Test: 116,323
+[Model] OCRConvNet  |  Parameters: 2,469,927  |  Est. size: 9.4 MB
+
 Epoch   1/50  loss: 1.8432  acc: 0.4821  |  val_loss: 1.4201  val_acc: 0.5934
 Epoch   2/50  loss: 1.3104  acc: 0.6147  |  val_loss: 1.1823  val_acc: 0.6501
 ...
-[Checkpoint] val_loss improved to 0.4821 — saved to best_model.pt
+[Checkpoint] val_loss improved — saved to best_model.pt
 ...
 [EarlyStopping] Stopping training.
 
 Test accuracy : 0.8743  (87.43%)
 ```
 
-EarlyStopping halts training automatically when validation loss stops improving. Best weights are saved at every improvement. On an RTX 4080 expect roughly 15–25 minutes total.
+EarlyStopping halts training automatically when validation loss stops improving. Best weights saved at every improvement. On RTX 4080 expect roughly 15–25 minutes total.
 
 ---
 
@@ -146,7 +167,7 @@ Input (1, 32, 32) — grayscale character image
 
 Stem:    DepthwiseSeparableConv(1 → 32)
 Stage 1: ResidualBlock(32 → 64)  + MaxPool2d + Dropout2d
-Stage 2: ResidualBlock(64 → 128) + MaxPool2d + Dropout2d  
+Stage 2: ResidualBlock(64 → 128) + MaxPool2d + Dropout2d
 Stage 3: ResidualBlock(128 → 256)+ MaxPool2d
 Stage 4: ResidualBlock(256 → 256)
 Pool:    AdaptiveAvgPool2d(1)  [GlobalAveragePooling equivalent]
@@ -186,7 +207,7 @@ for char, confidence in results:
 
 Use the ONNX export — no PyTorch or CUDA needed:
 
-```
+```cmd
 pip install onnxruntime pillow numpy
 ```
 
@@ -195,22 +216,21 @@ import onnxruntime as ort
 import numpy as np
 from PIL import Image
 
-session   = ort.InferenceSession("ocr_model.onnx")
-img       = Image.open("your_character.png").convert("L").resize((32, 32))
-arr       = (np.array(img, dtype=np.float32) / 255.0 - 0.5) / 0.5
-arr       = arr[np.newaxis, np.newaxis, :, :]   # (1, 1, 32, 32)
-logits    = session.run(None, {"image": arr})[0]
-predicted = logits.argmax()
+session = ort.InferenceSession("ocr_model.onnx")
+img     = Image.open("your_character.png").convert("L").resize((32, 32))
+arr     = (np.array(img, dtype=np.float32) / 255.0 - 0.5) / 0.5
+arr     = arr[np.newaxis, np.newaxis, :, :]
+logits  = session.run(None, {"image": arr})[0]
 
 LABEL_MAP = list("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ") + list("abcdefghijklmnopqrstuvwxyz")
-print(f"Predicted: {LABEL_MAP[predicted]}")
+print(f"Predicted: {LABEL_MAP[logits.argmax()]}")
 ```
 
 ---
 
 ## Reproducing From Scratch on Another Machine
 
-```
+```cmd
 git clone https://github.com/BECKHAMW3233/CSC-114
 cd CSC-114/project
 ```
