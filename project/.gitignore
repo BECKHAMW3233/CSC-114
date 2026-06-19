@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+venv_keras/
+venv_tf311/
+
+# Dataset — too large for GitHub (562MB download)
+datasets/
+
+# Training logs and plots — generated during training
+pytorch/training_log.csv
+pytorch/training_curves.png
+pytorch2/training_log2.csv
+pytorch2/training_curves2.png
+pytorch3/training_log3.csv
+pytorch3/training_curves3.png
+
+# Temp files
+*.tmp
+*.log
