@@ -8,14 +8,15 @@ A handwritten character recognition system built from scratch in pure PyTorch as
 
 ## Results
 
-| Model | Architecture | Params | Optimizer | Test Acc |
-|-------|-------------|--------|-----------|----------|
-| Model 1 | Narrow ResNet + DepthwiseSep | 2.4M | Adam + OneCycleLR | **88.06%** |
-| Model 2 | Wide ResNet + Squeeze-Excitation | 9.9M | AdamW + CosineAnneal | **88.06%** |
-| Model 3 | Triple-Width + Multi-Scale Fusion | 6.1M | SGD + WarmRestarts | **87.37%** |
-| **2-Model Ensemble (M1+M2)** | Equal weight avg softmax | — | — | **88.17%** |
-| **3-Model Simple Ensemble** | Equal weight avg softmax | — | — | **88.09%** |
-| **3-Model Weighted + TTA** | w1×0.38 + w2×0.38 + w3×0.24, 8 augments | — | — | **TBD** |
+| Model | Architecture | Params | Optimizer | Epochs | Test Acc |
+|-------|-------------|--------|-----------|--------|----------|
+| Model 1 | Narrow ResNet + DepthwiseSep | 2.4M | Adam + OneCycleLR | 50 | **88.06%** |
+| Model 2 | Wide ResNet + Squeeze-Excitation | 9.9M | AdamW + CosineAnneal | 47 | **88.06%** |
+| Model 3 | Triple-Width + Multi-Scale Fusion | 6.1M | SGD + WarmRestarts | 28 | **87.74%** |
+| **2-Model Ensemble (M1+M2)** | Equal weight avg softmax | — | — | — | **88.17%** |
+| **3-Model Simple Ensemble** | Equal weight avg softmax | — | — | — | **88.15%** |
+| **3-Model Weighted Ensemble** | w1×0.38 + w2×0.38 + w3×0.24 | — | — | — | **88.16%** |
+| **3-Model Weighted + TTA** | 8 augments per image, weighted | — | — | — | *bug in eval loop — excluded* |
 
 ---
 
@@ -47,7 +48,7 @@ Downloaded automatically via `torchvision.datasets.EMNIST` on first run (~562 MB
 | cuDNN | 9.23 |
 | Driver | 596.49 |
 
-Training speeds: Model 1 ~30s/epoch · Model 2 ~88s/epoch · Model 3 ~155s/epoch
+Training speeds: Model 1 ~30s/epoch (50 epochs, ~25 min) · Model 2 ~88s/epoch (47 epochs, ~69 min) · Model 3 ~155s/epoch (28 epochs, ~72 min)
 
 ---
 
@@ -137,6 +138,8 @@ Key differences from Models 1+2:
 - **5-layer classifier** vs Model 1's 2 and Model 2's 3
 - Batch size 256 (wider channels use more VRAM)
 - Heavier augmentation: ±15° rotation, scale 0.80-1.20, shear 10°, RandomPerspective
+- `num_workers=0` required on Windows — multiprocessing deadlock with persistent workers at this model size
+- Early stopped at epoch 28 (restart at epoch 20 disrupted convergence)
 
 ---
 
@@ -169,6 +172,8 @@ Weights proportional to test accuracy. Models 1 and 2 tied at 88.06% get equal h
 
 **Weighted + Test Time Augmentation (TTA):**
 Each image is run through 8 augmented versions at inference time (±8° rotation, ±8% translation, ±8% scale). Probabilities averaged before weighting. No retraining required. Typical gain: 0.3–0.8% on character recognition.
+
+Note: the TTA evaluation loop produced an invalid result (82.56% — below all individual models, which is mathematically impossible for correct TTA). This indicates a bug in the augmentation transform inside the inference loop, most likely a tensor dtype or device mismatch corrupting the augmented images silently. The simple and weighted ensemble results (88.15% and 88.16%) are valid. TTA fix is pending.
 
 ---
 
