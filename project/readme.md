@@ -1,243 +1,324 @@
-# EMNIST OCR — Handwritten & Printed Character Recognition
-**Author:** William Beckham | **Course:** CSC-114 | **FTCC Spring/Summer 2026**
+# EMNIST OCR — Three-Model PyTorch Ensemble
 
-Custom OCR model trained to recognize handwritten and printed characters from scratch using the EMNIST dataset. Covers the full pipeline from environment setup through GPU-accelerated training to inference — no pretrained weights, no shortcuts.
+**CSC-114 Artificial Intelligence I — Final Project**
+William Edward Beckham III | FTCC | Summer 2026
 
-**Recognizes:** digits 0–9, letters A–Z and a–z (62 classes total)  
-**Dataset:** EMNIST byclass — 814,255 samples (Cohen et al. 2017)  
-**Framework:** PyTorch 2.5.1 with CUDA 12.1 (pure PyTorch) and Keras 3 on PyTorch backend  
+A production-grade handwritten character recognition system built from scratch in pure PyTorch. Three architecturally distinct convolutional neural networks trained on EMNIST byclass (814,255 samples, 62 classes), combined via weighted ensemble with Test Time Augmentation.
 
 ---
 
-## Book Reference
-All architecture and training decisions are grounded in:
+## Results
 
-> Chollet & Watson, *Deep Learning with Python, 3rd Edition* (Manning, 2025)
-
-| Chapter | Applied concepts |
-|---|---|
-| Ch. 2 | Tensor math, normalization, gradient descent, backpropagation |
-| Ch. 3 | PyTorch tensors, `nn.Module`, `backward()`, `optimizer.step()`, `zero_grad()` |
-| Ch. 5 | Overfitting, Dropout, weight decay, data augmentation as regularization |
-| Ch. 6 | Universal ML workflow: define → measure → prepare → model → tune → evaluate |
-| Ch. 7 | Functional API, compile/fit/evaluate, EarlyStopping, ModelCheckpoint, CSVLogger |
-| Ch. 8 | ConvNet architecture, MaxPooling, GlobalAveragePooling, filter progression, augmentation |
-| Ch. 9 | BatchNormalization, residual connections, depthwise separable convolutions |
-| Ch. 18 | Mixed-precision training, LossScaleOptimizer, Optuna BayesianOptimization, model ensembling, int8 quantization |
+| Model | Architecture | Params | Optimizer | Test Acc |
+|-------|-------------|--------|-----------|----------|
+| Model 1 | Narrow ResNet + DepthwiseSep | 2.4M | Adam + OneCycleLR | **88.06%** |
+| Model 2 | Wide ResNet + Squeeze-Excitation | 9.9M | AdamW + CosineAnneal | **88.06%** |
+| Model 3 | Triple-Width + Multi-Scale Fusion | 6.1M | SGD + WarmRestarts | **87.37%** |
+| **2-Model Ensemble (M1+M2)** | Equal weight avg softmax | — | — | **88.17%** |
+| **3-Model Simple Ensemble** | Equal weight avg softmax | — | — | **88.09%** |
+| **3-Model Weighted + TTA** | w1×0.38 + w2×0.38 + w3×0.24, 8 augments | — | — | **TBD** |
 
 ---
 
-## Hardware Used
+## Dataset
+
+**EMNIST byclass** — Cohen et al. 2017
+
+| Split | Samples |
+|-------|---------|
+| Train | 593,243 |
+| Val | 104,689 |
+| Test | 116,323 |
+| **Total** | **814,255** |
+
+62 classes: digits `0-9`, uppercase `A-Z`, lowercase `a-z`
+
+Downloaded automatically via `torchvision.datasets.EMNIST` on first run (~562 MB).
+
+---
+
+## Hardware
+
 | Component | Spec |
-|---|---|
-| CPU | AMD Ryzen 9 7900X @ 5.3 GHz (24 threads) |
+|-----------|------|
+| CPU | AMD Ryzen 9 7900X (24 threads) |
 | RAM | 64 GB DDR5-5600 |
-| GPU | NVIDIA GeForce RTX 4080 16 GB |
-| NVIDIA Driver | 596.49 |
-| OS | Windows 11 (10.0.26200.8655) |
-
-Minimum to reproduce: any NVIDIA GPU with 8+ GB VRAM and CUDA 12.x support. CPU-only training works but will be significantly slower.
-
----
-
-## Verified Package Versions
-| Package | Version |
-|---|---|
-| PyTorch | 2.5.1+cu121 |
-| torchvision | 0.20.1+cu121 |
+| GPU | NVIDIA GeForce RTX 4080 (16 GB VRAM) |
 | CUDA | 12.1 |
-| cuDNN | 9.1.0 |
-| numpy | 1.26.4 |
-| matplotlib | 3.11.0 |
-| Pillow | 12.2.0 |
-| optuna | 4.9.0 |
-| Python | 3.12.10 |
+| cuDNN | 9.23 |
+| Driver | 596.49 |
+
+Training speeds: Model 1 ~30s/epoch · Model 2 ~88s/epoch · Model 3 ~155s/epoch
 
 ---
 
-## Repository Contents
+## Architecture Overview
+
+### Model 1 — `ocr_pytorch_model.py`
+**Narrow ResNet with Depthwise Separable Stem**
 
 ```
-├── 01_install_cuda.bat            # Step 1 — CUDA 12.3 + cuDNN install guide (run as Admin)
-├── 02_install_python_packages.bat # Step 2 — Python venv + all pip packages
-├── 03_verify_gpu.py               # Step 3 — confirms GPU is visible before training
-├── ocr_pytorch_model.py           # Pure PyTorch training pipeline (recommended)
-├── ocr_handwriting_model.py       # Keras 3 on PyTorch backend training pipeline
-├── .gitignore                     # excludes venv, datasets, and compiled files
-└── README.md                      # this file
+Input (1, 32, 32)
+→ DepthwiseSep Stem (1→32)
+→ ResidualBlock (32→64)  + MaxPool → 16×16
+→ ResidualBlock (64→128) + MaxPool →  8×8
+→ ResidualBlock (128→256)+ MaxPool →  4×4
+→ ResidualBlock (256→256)
+→ AdaptiveAvgPool → flatten
+→ Linear(256→256) → BN → ReLU → Dropout
+→ Linear(256→62)
+```
+
+- AMP (mixed float16) with `GradScaler`
+- `OneCycleLR` — warmup → peak → cosine anneal
+- `Adam` optimizer, lr=1e-3, weight_decay=1e-4
+- `SpatialDropout2D` regularization
+- `EarlyStopping` patience=7
+- Trained all 50 epochs
+- Exports: `.pt` checkpoint + ONNX opset 17
+
+---
+
+### Model 2 — `ocr_pytorch_model2.py`
+**Wide ResNet with Squeeze-Excitation Attention**
+
+```
+Input (1, 32, 32)
+→ DepthwiseSep Stem (1→32)
+→ SEResidualBlock (32→128)  + MaxPool → 16×16
+→ SEResidualBlock (128→256) + MaxPool →  8×8
+→ SEResidualBlock (256→512) + MaxPool →  4×4
+→ SEResidualBlock (512→512)
+→ AdaptiveAvgPool → flatten
+→ Linear(512→512) → BN → ReLU → Dropout(0.5)
+→ Linear(512→256) → BN → ReLU → Dropout(0.4)
+→ Linear(256→62)
+```
+
+Key differences from Model 1:
+- **Squeeze-Excitation attention** — channel recalibration after each stage via GlobalAvgPool → FC → Sigmoid → channel-wise scale (Hu et al. 2018)
+- **StochasticDepth (DropPath)** — drops entire residual branches during training
+- **AdamW** — weight decay decoupled from adaptive lr scaling
+- **CosineAnnealingLR** — smooth monotonic decay
+- 4x wider filter progression (128→256→512 vs 64→128→256)
+- Deeper 3-layer classifier head
+- Early stopped at epoch 47
+
+---
+
+### Model 3 — `ocr_pytorch_model3.py`
+**Triple-Width + Multi-Scale Feature Fusion**
+
+```
+Input (1, 32, 32)
+→ Triple Stem: DepthwiseSep(1→96) → Conv(96→96)
+→ 2× TripleResidualBlock (96→192)  + MaxPool → 16×16
+→ 2× TripleResidualBlock (192→384) + MaxPool →  8×8  ─┐ save s2
+→ 2× TripleResidualBlock (384→768) + MaxPool →  4×4  ─┤ save s3
+→ 2× TripleResidualBlock (768→768)                    ─┘ save s4
+
+Multi-Scale Fusion:
+→ GAP(s2)→(B,384) + GAP(s3)→(B,768) + GAP(s4)→(B,768)
+→ concat → (B, 1920)
+
+Deep Classifier (5 layers, GELU activations):
+→ 1920→1024 → BN → GELU → Dropout(0.5)
+→ 1024→512  → BN → GELU → Dropout(0.4)
+→ 512→256   → BN → GELU → Dropout(0.3)
+→ 256→128   → BN → GELU → Dropout(0.2)
+→ 128→62
+```
+
+Key differences from Models 1+2:
+- **Bottleneck residual blocks** — 3 convs per block (1×1 reduce → 3×3 process → 1×1 expand)
+- **Multi-scale feature pyramid** — concatenates GAP from stages 2, 3, 4 simultaneously. Early stages capture strokes, mid stages capture character parts, late stages capture whole shapes. Neither Model 1 nor 2 does this
+- **GELU activations** — `x * Φ(x)`, smooth non-monotonic, different activation family from ReLU
+- **SGD + Nesterov momentum** — different optimizer family from Adam/AdamW
+- **CosineAnnealingWarmRestarts** — T_0=20, LR resets after initial convergence
+- **5-layer classifier** vs Model 1's 2 and Model 2's 3
+- Batch size 256 (wider channels use more VRAM)
+- Heavier augmentation: ±15° rotation, scale 0.80-1.20, shear 10°, RandomPerspective
+
+---
+
+## Ensemble Strategy
+
+### Why Three Different Models?
+Ch. 18 (Chollet & Watson 2025): models trained independently with different architectures make partially uncorrelated errors. Averaging their softmax outputs allows the correct class to accumulate votes while errors split across wrong classes.
+
+### Architectural Diversity Summary
+
+| Dimension | Model 1 | Model 2 | Model 3 |
+|-----------|---------|---------|---------|
+| Filter width | Narrow (64→256) | Wide (128→512) | Triple (192→768) |
+| Attention | None | SE channel | SE channel |
+| Block type | 2-conv basic | 2-conv + SE | 3-conv bottleneck + SE |
+| Multi-scale fusion | No | No | Yes (stages 2+3+4) |
+| Classifier depth | 2 layers | 3 layers | 5 layers |
+| Classifier activation | ReLU | ReLU | GELU |
+| Optimizer | Adam | AdamW | SGD+Nesterov |
+| LR schedule | OneCycleLR | CosineAnnealing | CosineWarmRestarts |
+| Regularization | SpatialDropout | StochasticDepth | StochasticDepth |
+| Augmentation strength | Light | Medium | Heavy |
+
+### Ensemble Methods (all in `ocr_pytorch_model3.py`)
+
+**Simple equal-weight:** `(p1 + p2 + p3) / 3`
+
+**Weighted:** `0.38·p1 + 0.38·p2 + 0.24·p3`
+Weights proportional to test accuracy. Models 1 and 2 tied at 88.06% get equal higher weight; Model 3 at 87.37% gets lower weight.
+
+**Weighted + Test Time Augmentation (TTA):**
+Each image is run through 8 augmented versions at inference time (±8° rotation, ±8% translation, ±8% scale). Probabilities averaged before weighting. No retraining required. Typical gain: 0.3–0.8% on character recognition.
+
+---
+
+## Project Structure
+
+```
+E:\CSC-114\emnist-model\
+│
+├── ocr_pytorch_model.py          # Model 1 — Narrow ResNet (2.4M)
+├── ocr_pytorch_model2.py         # Model 2 — Wide + SE (9.9M)
+├── ocr_pytorch_model3.py         # Model 3 — Triple + Multi-Scale (6.1M)
+│                                 #   + TTA + weighted ensemble
+├── ocr_handwriting_model.py      # Keras 3 / PyTorch backend (arch reference)
+│
+├── 01_install_cuda.bat           # CUDA 12.1 + cuDNN 9.23 installer
+├── 02_install_python_packages.bat
+├── 03_verify_gpu.py
+│
+├── datasets\pytorch\EMNIST\raw\  # Auto-downloaded on first run
+│
+├── pytorch\                      # Model 1 outputs
+│   ├── best_model.pt
+│   ├── final_model.pt
+│   ├── ocr_model.onnx
+│   ├── training_curves.png
+│   └── training_log.csv
+│
+├── pytorch2\                     # Model 2 outputs
+│   ├── best_model2.pt
+│   ├── final_model2.pt
+│   ├── ocr_model2.onnx
+│   ├── training_curves2.png
+│   └── training_log2.csv
+│
+└── pytorch3\                     # Model 3 outputs + ensemble
+    ├── best_model3.pt
+    ├── final_model3.pt
+    ├── ocr_model3.onnx
+    ├── training_curves3.png
+    └── training_log3.csv
 ```
 
 ---
 
-## Setup — Run in This Order
+## Setup & Reproduction
 
 ### Prerequisites
-- Windows 10/11 64-bit
-- Python 3.10, 3.11, or 3.12
-- NVIDIA GPU with CUDA 12.x support
-- ~15 GB free disk space for CUDA, packages, and dataset
+- Windows 10/11
+- NVIDIA GPU (RTX 3000 series or newer recommended)
+- NVIDIA Driver 525.60+
+- Python 3.12
 
-### Step 1 — Install CUDA and cuDNN
-Run as Administrator:
-```
+### Install
+
+```cmd
+REM Step 1 — CUDA + cuDNN (run as Administrator)
 01_install_cuda.bat
-```
-Opens the CUDA 12.3 and cuDNN download pages with instructions on what to select and where to copy files. A free NVIDIA developer account is required for cuDNN.
 
-### Step 2 — Install Python packages
-```
+REM Step 2 — Python packages
 02_install_python_packages.bat
-```
-Creates a virtual environment at `E:\CSC-114\emnist-model\venv\` and installs all required packages including PyTorch with CUDA 12.1 support.
 
-> **Note:** Change the `BASE_DIR` path inside both `.py` files if you want output somewhere other than `E:\CSC-114\emnist-model\`
-
-### Step 3 — Verify GPU
-```
+REM Step 3 — Verify GPU
 "E:\CSC-114\emnist-model\venv\Scripts\python.exe" 03_verify_gpu.py
 ```
 
-Quick PyTorch GPU check:
-```cmd
-"E:\CSC-114\emnist-model\venv\Scripts\python.exe" -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0))"
-```
-
-Must return `True` and your GPU name before proceeding.
-
-### Step 4 — Train
-**PyTorch version (recommended):**
-```cmd
-"E:\CSC-114\emnist-model\venv\Scripts\python.exe" ocr_pytorch_model.py
-```
-
-**Keras version:**
-```cmd
-"E:\CSC-114\emnist-model\venv\Scripts\python.exe" ocr_handwriting_model.py
-```
-
-First run downloads EMNIST dataset (~540 MB) automatically to the datasets folder. Subsequent runs use the cached copy.
-
----
-
-## What Happens During Training
-
-```
-============================================================
-  EMNIST OCR — Pure PyTorch
-  PyTorch 2.5.1+cu121  |  AMP: True
-  Output: E:\CSC-114\emnist-model\pytorch
-============================================================
-[Device] NVIDIA GeForce RTX 4080  |  16.0 GB VRAM  |  CUDA 12.1  |  AMP: True
-[Dataset] Train: 593,243  |  Val: 104,689  |  Test: 116,323
-[Model] OCRConvNet  |  Parameters: 2,469,927  |  Est. size: 9.4 MB
-
-Epoch   1/50  loss: 1.8432  acc: 0.4821  |  val_loss: 1.4201  val_acc: 0.5934
-Epoch   2/50  loss: 1.3104  acc: 0.6147  |  val_loss: 1.1823  val_acc: 0.6501
-...
-[Checkpoint] val_loss improved — saved to best_model.pt
-...
-[EarlyStopping] Stopping training.
-
-Test accuracy : 0.8743  (87.43%)
-```
-
-EarlyStopping halts training automatically when validation loss stops improving. Best weights saved at every improvement. On RTX 4080 expect roughly 15–25 minutes total.
-
----
-
-## Output Files
-
-All output lands in `E:\CSC-114\emnist-model\pytorch\` (PyTorch) or `E:\CSC-114\emnist-model\` (Keras):
-
-| File | Description |
-|---|---|
-| `best_model.pt` | Best checkpoint saved during training |
-| `final_model.pt` | Model state at end of training |
-| `ocr_model.onnx` | ONNX export — runs anywhere without PyTorch |
-| `ocr_model_quantized.pt` | int8 quantized model for faster CPU inference |
-| `training_curves.png` | Accuracy and loss plot |
-| `training_log.csv` | Per-epoch metrics |
-
----
-
-## Model Architecture
-
-```
-Input (1, 32, 32) — grayscale character image
-
-Stem:    DepthwiseSeparableConv(1 → 32)
-Stage 1: ResidualBlock(32 → 64)  + MaxPool2d + Dropout2d
-Stage 2: ResidualBlock(64 → 128) + MaxPool2d + Dropout2d
-Stage 3: ResidualBlock(128 → 256)+ MaxPool2d
-Stage 4: ResidualBlock(256 → 256)
-Pool:    AdaptiveAvgPool2d(1)  [GlobalAveragePooling equivalent]
-Head:    Linear(256) → BatchNorm → ReLU → Dropout → Linear(62)
-
-Output: 62 class logits
-```
-
-**Parameters:** 2,469,927 (~9.4 MB)
-
-Each ResidualBlock (Ch. 9): Conv → BN → ReLU → Conv → BN → add skip → ReLU  
-Depthwise separable convolution (Ch. 9): ~8x fewer parameters than standard Conv2D
-
----
-
-## Running Inference After Training
-
-Drop a character image into the output folder named `sample_char.png` and rerun — the script predicts automatically at the end.
-
-To run inference only without retraining:
-
-```python
-from ocr_pytorch_model import load_saved_model, predict_image
-import torch
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model  = load_saved_model(r"E:\CSC-114\emnist-model\pytorch\best_model.pt", device)
-
-results = predict_image(model, "your_character.png", device, top_k=5)
-for char, confidence in results:
-    print(f"{char}  {confidence:.4f}")
-```
-
----
-
-## Running on a Machine Without a GPU
-
-Use the ONNX export — no PyTorch or CUDA needed:
+### Train
 
 ```cmd
-pip install onnxruntime pillow numpy
+cd E:\CSC-114\emnist-model
+
+REM Model 1  (~25 min on RTX 4080)
+"venv\Scripts\python.exe" ocr_pytorch_model.py
+
+REM Model 2  (~70 min on RTX 4080)
+"venv\Scripts\python.exe" ocr_pytorch_model2.py
+
+REM Model 3 + full ensemble + TTA  (~2.5 hrs on RTX 4080)
+"venv\Scripts\python.exe" ocr_pytorch_model3.py
 ```
 
-```python
-import onnxruntime as ort
-import numpy as np
-from PIL import Image
+EMNIST downloads automatically (~562 MB) on first run. Models 1 and 2 must complete before Model 3 — the ensemble evaluation loads all three checkpoints.
 
-session = ort.InferenceSession("ocr_model.onnx")
-img     = Image.open("your_character.png").convert("L").resize((32, 32))
-arr     = (np.array(img, dtype=np.float32) / 255.0 - 0.5) / 0.5
-arr     = arr[np.newaxis, np.newaxis, :, :]
-logits  = session.run(None, {"image": arr})[0]
-
-LABEL_MAP = list("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ") + list("abcdefghijklmnopqrstuvwxyz")
-print(f"Predicted: {LABEL_MAP[logits.argmax()]}")
-```
-
----
-
-## Reproducing From Scratch on Another Machine
+### CPU-Only Inference (No GPU Required)
 
 ```cmd
-git clone https://github.com/BECKHAMW3233/CSC-114
-cd CSC-114/project
+pip install onnxruntime
 ```
 
-Then follow Steps 1–4 above. The venv is not included in the repo — recreate it with `02_install_python_packages.bat`. The EMNIST dataset downloads automatically on first training run.
+Use any of the `.onnx` files with `onnxruntime`. No PyTorch, CUDA, or GPU required. Tested on school computer (8-thread CPU, no CUDA).
 
 ---
 
-## License
-MIT
+## Dependencies
+
+| Package | Version |
+|---------|---------|
+| Python | 3.12.10 |
+| PyTorch | 2.5.1+cu121 |
+| torchvision | 0.20.1+cu121 |
+| torchmetrics | 1.9.0 |
+| keras | 3.14.1 |
+| keras-hub | 0.29.1 |
+| numpy | 1.26.4 |
+| matplotlib | 3.11.0 |
+| optuna | 4.9.0 |
+| pillow | 12.2.0 |
+| onnx | 1.22.0 |
+| CUDA | 12.1 |
+| cuDNN | 9.23 |
+
+---
+
+## Book References
+
+Chollet, F. & Watson, T. *Deep Learning with Python, 3rd Ed.* Manning Publications, 2025.
+
+| Chapter | Concepts Applied |
+|---------|-----------------|
+| Ch. 3 | `nn.Module`, `forward()`, `backward()`, `optimizer.step()`, tensor operations, AMP |
+| Ch. 5 | Dropout, SpatialDropout, StochasticDepth, weight decay, augmentation as regularization |
+| Ch. 6 | Train/val/test split, evaluation protocol, touching test set only once at end |
+| Ch. 8 | ConvNet filter progression, `GlobalAveragePooling`, feature hierarchies, multi-scale fusion |
+| Ch. 9 | `BatchNormalization`, residual connections, depthwise separable convolutions, SE attention |
+| Ch. 18 | Mixed precision, model ensembling, softmax averaging, test time augmentation, ONNX export |
+
+---
+
+## Notes
+
+**Why three separate files?**
+Each model is architecturally distinct enough that a shared codebase would obscure the design decisions. Separate files make each model independently readable and runnable.
+
+**Why not Keras for all three?**
+Keras 3 on the PyTorch backend introduces ~38x slowdown vs native PyTorch DataLoaders on this hardware (1s/step vs 30s/epoch on identical architecture). Root cause: Keras's data adapter layer converts tensors to numpy and back on every batch. All production training uses pure PyTorch.
+
+**Why AMP?**
+`torch.amp.GradScaler` with `autocast` runs forward passes in float16, reducing VRAM ~40% and increasing Tensor Core throughput. Gradients are scaled to prevent underflow, then unscaled before the optimizer step.
+
+**ONNX for portability:**
+School demo machine has a GT 730 (no CUDA) and 8 CPU threads. ONNX Runtime provides CPU inference with `pip install onnxruntime` as the only dependency.
+
+---
+
+## Author
+
+**William Edward Beckham III**
+AAS Information Technology / Systems Security & Analysis — May 2026, FTCC (4.0 GPA, Highest Honors)
+AAS Computer Programming & Development — In progress, FTCC
+NCL Spring 2026: Team L8_Arrivals, Rank 142/3,638 (top ~4%)
+Combat Veteran — 13B Field Artillery, 82nd Airborne | 38B Civil Affairs, USACAPOC
+
+GitHub: [BECKHAMW3233](https://github.com/BECKHAMW3233)
