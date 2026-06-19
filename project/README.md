@@ -318,9 +318,6 @@ School demo machine has a GT 730 (no CUDA) and 8 CPU threads. ONNX Runtime provi
 ## Author
 
 **William Edward Beckham III**
-AAS Information Technology / Systems Security & Analysis — May 2026, FTCC (4.0 GPA, Highest Honors)
-AAS Computer Programming & Development — In progress, FTCC
-NCL Spring 2026: Team L8_Arrivals, Rank 142/3,638 (top ~4%)
-Combat Veteran — 13B Field Artillery, 82nd Airborne | 38B Civil Affairs, USACAPOC
+FTCC — CSC-114 Artificial Intelligence I, Summer 2026
 
 GitHub: [BECKHAMW3233](https://github.com/BECKHAMW3233)
