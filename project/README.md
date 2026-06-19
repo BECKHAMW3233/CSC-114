@@ -1,9 +1,8 @@
 # EMNIST OCR — Three-Model PyTorch Ensemble
 
-**CSC-114 Artificial Intelligence I — Final Project**
-William Edward Beckham III | FTCC | Summer 2026
+**William Edward Beckham III | FTCC CSC-114 | Summer 2026**
 
-A production-grade handwritten character recognition system built from scratch in pure PyTorch. Three architecturally distinct convolutional neural networks trained on EMNIST byclass (814,255 samples, 62 classes), combined via weighted ensemble with Test Time Augmentation.
+A handwritten character recognition system built from scratch in pure PyTorch as a self-directed learning project alongside CSC-114 coursework. Three architecturally distinct convolutional neural networks trained on EMNIST byclass (814,255 samples, 62 classes), combined via weighted ensemble with Test Time Augmentation.
 
 ---
 
@@ -318,6 +317,5 @@ School demo machine has a GT 730 (no CUDA) and 8 CPU threads. ONNX Runtime provi
 ## Author
 
 **William Edward Beckham III**
-FTCC — CSC-114 Artificial Intelligence I, Summer 2026
 
 GitHub: [BECKHAMW3233](https://github.com/BECKHAMW3233)
