@@ -186,6 +186,7 @@ E:\CSC-114\emnist-model\
 ├── ocr_pytorch_model2.py         # Model 2 — Wide + SE (9.9M)
 ├── ocr_pytorch_model3.py         # Model 3 — Triple + Multi-Scale (6.1M)
 │                                 #   + TTA + weighted ensemble
+├── ocr_inference.py              # Run inference on any image — predicts character
 ├── ocr_handwriting_model.py      # Keras 3 / PyTorch backend (arch reference)
 │
 ├── 01_install_cuda.bat           # CUDA 12.1 + cuDNN 9.23 installer
@@ -255,6 +256,50 @@ REM Model 3 + full ensemble + TTA  (~2.5 hrs on RTX 4080)
 ```
 
 EMNIST downloads automatically (~562 MB) on first run. Models 1 and 2 must complete before Model 3 — the ensemble evaluation loads all three checkpoints.
+
+### Running Inference — Predict a Character
+
+```cmd
+cd E:\CSC-114\emnist-model
+"venv\Scripts\python.exe" ocr_inference.py path\to\your\image.png
+```
+
+Runs the image through all three models and prints the ensemble prediction with top-5 confidence scores from each model individually and combined.
+
+Example output:
+```
+==================================================
+  Image: test_char.png
+==================================================
+  PREDICTION : 'A'
+  CONFIDENCE : 94.3%
+==================================================
+
+  Ensemble (weighted M1×0.38 + M2×0.38 + M3×0.24):
+    1. 'A'  94.3%
+    2. 'a'   3.1%
+    3. 'R'   1.2%
+    ...
+
+  Model 1 (Narrow ResNet 88.06%):
+    1. 'A'  93.7%
+    ...
+```
+
+Options:
+```cmd
+REM Force CPU inference
+"venv\Scripts\python.exe" ocr_inference.py image.png --cpu
+
+REM Show top 3 predictions only
+"venv\Scripts\python.exe" ocr_inference.py image.png --top 3
+```
+
+Image requirements:
+- Any format: PNG, JPG, BMP, TIFF
+- Any size — auto-resized to 32×32
+- Any color — auto-converted to grayscale
+- Auto-inverted if needed (white paper with dark ink works fine)
 
 ### CPU-Only Inference (No GPU Required)
 
