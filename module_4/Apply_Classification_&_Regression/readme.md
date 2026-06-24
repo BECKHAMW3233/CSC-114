@@ -112,18 +112,19 @@ CSC-114/
 
 ---
 
-## Environment Setup
+## Environment
 
-**Python:** 3.14 (system install)  
-**Keras backend:** PyTorch CPU (`torch 2.12.1+cpu`)  
-**Why PyTorch and not TensorFlow:** TensorFlow has no Python 3.14 wheels on Windows as of June 2026. Keras 3.x is backend-agnostic — swapping to PyTorch requires zero changes to the training code.
+**Hardware:** Ryzen 9 7900X, 64GB DDR5, RTX 4080 16GB (CPU-only for this task — 480 rows needs no GPU)  
+**Python:** 3.14  
+**Keras backend:** PyTorch CPU (`torch 2.12.1+cpu`)
 
-All cache and dataset files are directed to `E:\test projects\csc-114_tasks` to keep the C: drive clean.
+Trained locally on personal hardware rather than Colab. Colab's version-pinned environment caused repeated import failures and dependency conflicts during earlier coursework — local training gives full control over the stack and eliminates kernel reset and state loss issues.
+
+TensorFlow has no Python 3.14 wheels on Windows as of June 2026. The incompatibility was diagnosed, documented, and engineered around by switching Keras to the PyTorch backend. Keras 3.x is backend-agnostic — zero changes to the training code were required.
 
 ### Install
 
 ```powershell
-cd "E:\test projects\csc-114_tasks"
 & "C:\Users\Will\AppData\Local\Python\pythoncore-3.14-64\python.exe" setup_environment.py
 ```
 
@@ -136,7 +137,7 @@ Downloads and caches the California Housing dataset automatically.
 & "C:\Users\Will\AppData\Local\Python\pythoncore-3.14-64\python.exe" california_housing_regression.py
 ```
 
-Expected runtime: under 2 minutes on modern CPU hardware.
+Expected runtime: under 2 minutes.
 
 ---
 
