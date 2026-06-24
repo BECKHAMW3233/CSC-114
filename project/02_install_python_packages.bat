@@ -14,8 +14,6 @@ echo.
 
 :: ----------------------------------------------------------------------------
 :: Step 0 — Confirm Python is available and check version
-:: Requires Python 3.10 or 3.11. TensorFlow 2.16 does NOT support Python 3.12+
-:: Download Python 3.11 from: https://www.python.org/downloads/release/python-3119/
 :: ----------------------------------------------------------------------------
 echo [Step 0] Checking Python version...
 python --version
@@ -42,11 +40,15 @@ if not exist "E:\CSC-114\emnist-model\datasets" (
     echo Created: E:\CSC-114\emnist-model\datasets
 )
 
+if not exist "E:\CSC-114\emnist-model\datasets\kaggle" (
+    mkdir "E:\CSC-114\emnist-model\datasets\kaggle"
+    echo Created: E:\CSC-114\emnist-model\datasets\kaggle
+)
+
 echo.
 
 :: ----------------------------------------------------------------------------
 :: Step 2 — Create a virtual environment inside the project folder
-:: This keeps all packages isolated from your system Python install.
 :: ----------------------------------------------------------------------------
 echo [Step 2] Creating virtual environment at E:\CSC-114\emnist-model\venv ...
 python -m venv "E:\CSC-114\emnist-model\venv"
@@ -62,24 +64,14 @@ echo Virtual environment active.
 echo.
 
 :: ----------------------------------------------------------------------------
-:: Step 4 — Upgrade pip itself first
-:: Old pip versions sometimes fail to resolve TensorFlow's CUDA dependencies.
+:: Step 4 — Upgrade pip
 :: ----------------------------------------------------------------------------
 echo [Step 4] Upgrading pip...
 python -m pip install --upgrade pip
 echo.
 
 :: ----------------------------------------------------------------------------
-:: Step 5 — Install core packages in dependency order
-::
-:: Order matters:
-::   1. numpy          — everything depends on this
-::   2. tensorflow     — installs TF + bundled CUDA libs (tensorflow[and-cuda])
-::   3. keras          — Keras 3 multi-backend frontend
-::   4. keras-hub      — pretrained models (Xception backbone)
-::   5. tensorflow-datasets — EMNIST download and caching
-::   6. pillow         — image loading in predict_image()
-::   7. matplotlib     — training curve plots
+:: Step 5 — Install core packages
 :: ----------------------------------------------------------------------------
 echo [Step 5] Installing Python packages (this will take 5-15 minutes)...
 echo.
@@ -89,7 +81,6 @@ pip install "numpy>=1.24,<2.0"
 echo.
 
 echo Installing TensorFlow with bundled CUDA support...
-echo (tensorflow[and-cuda] bundles CUDA runtime so TF finds the GPU automatically)
 pip install "tensorflow[and-cuda]>=2.16"
 echo.
 
@@ -97,7 +88,7 @@ echo Installing Keras 3...
 pip install "keras>=3.0"
 echo.
 
-echo Installing KerasHub (pretrained Xception backbone)...
+echo Installing KerasHub...
 pip install keras-hub
 echo.
 
@@ -105,52 +96,89 @@ echo Installing TensorFlow Datasets (EMNIST loader)...
 pip install tensorflow-datasets
 echo.
 
-echo Installing Pillow (image I/O)...
+echo Installing Pillow...
 pip install pillow
 echo.
 
-echo Installing Matplotlib (training plots)...
+echo Installing Matplotlib...
 pip install matplotlib
-
 echo.
+
 echo Installing PyTorch with CUDA 12.1 support (RTX 4080)...
-echo (This is a large download — ~2.5 GB, may take 10-20 minutes)
+echo (Large download — ~2.5 GB, may take 10-20 minutes)
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-
 echo.
-echo Installing torchmetrics (accuracy tracking for PyTorch training loop)...
+
+echo Installing torchmetrics...
 pip install torchmetrics
 echo.
 
+echo Installing optuna (hyperparameter search)...
+pip install optuna
+echo.
+
+echo Installing onnx (model export)...
+pip install onnx
+echo.
+
 :: ----------------------------------------------------------------------------
-:: Step 6 — Copy the training script into the project folder
+:: Step 6 — Install Kaggle API for supplementary dataset download
+:: Required for the A-Z Handwritten Characters dataset (supplements EMNIST)
+:: After install: place your kaggle.json API key at C:\Users\<you>\.kaggle\kaggle.json
+:: Get your API key from: https://www.kaggle.com/settings -> API -> Create New Token
 :: ----------------------------------------------------------------------------
-echo [Step 6] Copying training script...
+echo Installing Kaggle API (supplementary dataset download)...
+pip install kaggle
+echo.
+echo [IMPORTANT] To use the Kaggle dataset downloader:
+echo   1. Go to https://www.kaggle.com/settings
+echo   2. Click API section -> "Create New Token"
+echo   3. This downloads kaggle.json
+echo   4. Place kaggle.json at: C:\Users\beckhamw3233\.kaggle\kaggle.json
+echo   5. Then run: python download_datasets.py
+echo.
+
+:: ----------------------------------------------------------------------------
+:: Step 7 — Copy scripts
+:: ----------------------------------------------------------------------------
+echo [Step 7] Copying training scripts...
 if exist "%~dp0ocr_handwriting_model.py" (
     copy "%~dp0ocr_handwriting_model.py" "E:\CSC-114\emnist-model\ocr_handwriting_model.py"
-    echo Copied ocr_handwriting_model.py to E:\CSC-114\emnist-model\
-) else (
-    echo WARNING: ocr_handwriting_model.py not found next to this script.
-    echo Manually copy it to E:\CSC-114\emnist-model\ocr_handwriting_model.py
+    echo Copied ocr_handwriting_model.py
+)
+if exist "%~dp0ocr_pytorch_model.py" (
+    copy "%~dp0ocr_pytorch_model.py" "E:\CSC-114\emnist-model\ocr_pytorch_model.py"
+    echo Copied ocr_pytorch_model.py
+)
+if exist "%~dp0ocr_pytorch_model2.py" (
+    copy "%~dp0ocr_pytorch_model2.py" "E:\CSC-114\emnist-model\ocr_pytorch_model2.py"
+    echo Copied ocr_pytorch_model2.py
+)
+if exist "%~dp0ocr_pytorch_model3.py" (
+    copy "%~dp0ocr_pytorch_model3.py" "E:\CSC-114\emnist-model\ocr_pytorch_model3.py"
+    echo Copied ocr_pytorch_model3.py
+)
+if exist "%~dp0download_datasets.py" (
+    copy "%~dp0download_datasets.py" "E:\CSC-114\emnist-model\download_datasets.py"
+    echo Copied download_datasets.py
 )
 echo.
 
 :: ----------------------------------------------------------------------------
-:: Step 7 — Copy and run the GPU verification script
+:: Step 8 — GPU verification
 :: ----------------------------------------------------------------------------
-echo [Step 7] Running GPU verification...
+echo [Step 8] Running GPU verification...
 if exist "%~dp003_verify_gpu.py" (
     python "%~dp003_verify_gpu.py"
 ) else (
-    echo Skipping GPU check — 03_verify_gpu.py not found next to this script.
-    echo Run it manually after setup.
+    echo Skipping GPU check — 03_verify_gpu.py not found.
 )
 echo.
 
 :: ----------------------------------------------------------------------------
-:: Step 8 — Print final package list for your records
+:: Step 9 — Package list
 :: ----------------------------------------------------------------------------
-echo [Step 8] Installed packages:
+echo [Step 9] Installed packages:
 pip list
 echo.
 
@@ -160,12 +188,13 @@ echo.
 echo ============================================================
 echo  Installation complete.
 echo.
-echo  To train the model:
-echo    1. Open a terminal
-echo    2. Run: E:\CSC-114\emnist-model\venv\Scripts\activate
-echo    3. Run: cd E:\CSC-114\emnist-model
-echo    4. Run: python ocr_handwriting_model.py
+echo  NEXT STEPS:
+echo    1. Place kaggle.json at C:\Users\beckhamw3233\.kaggle\kaggle.json
+echo    2. Run: python download_datasets.py   (downloads supplementary data)
+echo    3. Run: python ocr_pytorch_model.py   (train Model 1)
+echo    4. Run: python ocr_pytorch_model2.py  (train Model 2)
+echo    5. Run: python ocr_pytorch_model3.py  (train Model 3)
 echo.
-echo  All output files will appear in E:\CSC-114\emnist-model\
+echo  All output: E:\CSC-114\emnist-model\pytorch\
 echo ============================================================
 pause

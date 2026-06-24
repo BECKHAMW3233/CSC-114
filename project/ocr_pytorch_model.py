@@ -23,6 +23,20 @@ Book references — Chollet & Watson, "Deep Learning with Python, 3rd Ed." (Mann
   Ch. 18 — Mixed-precision training (torch.autocast + GradScaler), model ensembling,
             int8 quantization for faster inference, hyperparameter optimization
 
+CORRECTIONS APPLIED (v2):
+  - RandomRotation reduced from ±8° to ±5° — prevents L/7 and H/I confusion at 32x32
+  - Shear reduced from 5° to 3° — same reason
+  - WeightedRandomSampler added — addresses EMNIST byclass class imbalance
+  - Per-class accuracy logging added to evaluate() — identifies per-class failures
+  - Inference normalization documented: input must be (arr - 0.5) / 0.5 at inference
+
+RESOLUTION OPTION (v2):
+  - IMG_SIZE configurable: 32 (original) or 64 (recommended)
+  - At 64x64: b/t, B/P, 2/6, 3/W shape separations become visible features
+  - BATCH_SIZE auto-adjusts: 512 at 32x32, 256 at 64x64
+  - Training time ~2-3x longer per epoch at 64x64
+  - ONNX export and inference pipeline read IMG_SIZE from model input shape automatically
+
 Hardware target:
     AMD Ryzen 9 7900X  (24 threads — used by DataLoader workers)
     64 GB DDR5-5600    (full EMNIST dataset cached in RAM after epoch 1)
@@ -55,9 +69,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import DataLoader, random_split, Subset
+from torch.utils.data import DataLoader, random_split, Subset, WeightedRandomSampler, ConcatDataset
 from torchvision import datasets, transforms
 from torchvision.datasets import EMNIST
+
+# Supplementary datasets — EMNIST Balanced + Kaggle A-Z
+try:
+    from supplementary_data import load_supplementary, get_combined_weights
+    HAS_SUPPLEMENTARY = True
+except ImportError:
+    HAS_SUPPLEMENTARY = False
+    print("[Warning] supplementary_data.py not found — using EMNIST byclass only")
 
 
 # =============================================================================
@@ -65,18 +87,26 @@ from torchvision.datasets import EMNIST
 # =============================================================================
 
 NUM_CLASSES      = 62
-IMG_HEIGHT       = 32
-IMG_WIDTH        = 32
 
-BATCH_SIZE       = 512     # RTX 4080 16 GB + AMP float16
-EPOCHS           = 50      # EarlyStopping handles actual stopping point
-LEARNING_RATE    = 1e-3    # Ch. 3 Adam default
-WEIGHT_DECAY     = 1e-4    # Ch. 5 L2 regularization via optimizer
+# ── Resolution toggle ─────────────────────────────────────────────────────────
+# 64 recommended: resolves b/t, B/P, 2/6, 3/W shape-similarity failures
+# 32 original: faster training, use for quick iteration
+IMG_SIZE         = 64       # switch to 32 to revert to original resolution
+# IMG_SIZE       = 32       # original — uncomment to use
+IMG_HEIGHT       = IMG_SIZE
+IMG_WIDTH        = IMG_SIZE
+
+# Batch size auto-adjusts: 64x64 images are 4x memory of 32x32
+BATCH_SIZE       = 256 if IMG_SIZE == 64 else 512
+# ─────────────────────────────────────────────────────────────────────────────
+
+EPOCHS           = 50
+LEARNING_RATE    = 3e-4
+WEIGHT_DECAY     = 3e-5
 VALIDATION_SPLIT = 0.15
-PATIENCE         = 7       # EarlyStopping patience epochs
-NUM_WORKERS      = 8       # 7900X 24 threads — 8 workers saturates GPU pipeline
-
-USE_AMP          = True    # Ch. 18 mixed-precision — float16 compute, float32 weights
+PATIENCE         = 12
+NUM_WORKERS      = 8
+USE_AMP          = True
 
 BASE_DIR         = Path(r"E:\CSC-114\emnist-model\pytorch")
 DATA_DIR         = Path(r"E:\CSC-114\emnist-model\datasets\pytorch")
@@ -99,24 +129,16 @@ LABEL_MAP = (
 # =============================================================================
 
 def setup_device() -> torch.device:
-    """
-    Ch. 3: tensors must be explicitly moved to a device in PyTorch.
-    Unlike Keras which handles device placement automatically, PyTorch requires
-    model.to(device) and tensor.to(device) calls throughout the code.
-    """
     if torch.cuda.is_available():
         device = torch.device("cuda")
         props  = torch.cuda.get_device_properties(0)
         vram   = props.total_memory / 1024**3
         print(f"[Device] {props.name}  |  {vram:.1f} GB VRAM  |  "
               f"CUDA {torch.version.cuda}  |  AMP: {USE_AMP}")
-        # cuDNN autotuner: benchmarks conv algorithms for fixed input sizes
-        # and caches the fastest one — equivalent effect to XLA compilation in TF
         torch.backends.cudnn.benchmark = True
     else:
         device = torch.device("cpu")
         print(f"[Device] CPU — {torch.get_num_threads()} threads available")
-        print("         No GPU found. Run 03_verify_gpu.py to diagnose.")
     return device
 
 
@@ -126,48 +148,75 @@ def setup_device() -> torch.device:
 
 def get_transforms(augment: bool = False) -> transforms.Compose:
     """
-    Ch. 8 augmentation strategy translated to torchvision transforms.
-    Ch. 5: augmentation is a form of regularization — it synthetically
-    expands the training set by creating plausible variants of each image,
-    which prevents the model from memorizing exact training samples.
+    Ch. 8 augmentation strategy.
+    Ch. 5: augmentation is a form of regularization.
 
-    augment=True  → training pipeline (augmentation active)
-    augment=False → val/test pipeline (clean images only)
+    FIX v2: Rotation reduced from ±8° to ±5°, shear from 5° to 3°.
+    At 32x32 resolution, ±8° rotation rotates L into a position visually
+    indistinguishable from 7. ±5° preserves enough diversity without
+    destroying directional class boundaries (L/7, H/I, 1/l).
     """
     aug_transforms = [
-        # Ch. 8 equivalents:
-        transforms.RandomRotation(degrees=8),          # RandomRotation(0.08)
+        transforms.RandomRotation(degrees=5),          # FIX: was 8, now 5
         transforms.RandomAffine(
             degrees=0,
-            translate=(0.1, 0.1),                      # RandomTranslation
-            scale=(0.9, 1.1),                          # RandomZoom
-            shear=5,                                    # slight shear for cursive
+            translate=(0.1, 0.1),
+            scale=(0.9, 1.1),
+            shear=3,                                    # FIX: was 5, now 3
         ),
-        transforms.ColorJitter(contrast=0.2),          # ink density variation
+        transforms.ColorJitter(contrast=0.2),
     ] if augment else []
 
     base_transforms = [
         transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
-        transforms.ToTensor(),                         # uint8 [0,255] → float32 [0,1]
-        # Normalize to [-1, 1] — improves gradient flow vs raw [0,1]
-        # mean=0.5, std=0.5 centers the distribution around 0
+        transforms.ToTensor(),
+        # Normalize to [-1, 1] — IMPORTANT: inference must apply same normalization
+        # arr = arr / 255.0; arr = (arr - 0.5) / 0.5
         transforms.Normalize(mean=(0.5,), std=(0.5,)),
     ]
 
     return transforms.Compose(aug_transforms + base_transforms)
 
 
+def get_class_weights(dataset) -> torch.Tensor:
+    """Fixed v2: handles ConcatDataset correctly via supplementary_data."""
+    print("[Dataset] Computing class weights for balanced sampling...")
+    if HAS_SUPPLEMENTARY:
+        from supplementary_data import _extract_targets
+        targets = _extract_targets(dataset)
+    else:
+        # Fallback for when supplementary_data.py is not present
+        if hasattr(dataset, "datasets"):
+            all_t = []
+            for ds in dataset.datasets:
+                if hasattr(ds, "dataset") and hasattr(ds.dataset, "targets"):
+                    all_t.extend([int(ds.dataset.targets[i]) for i in ds.indices])
+                elif hasattr(ds, "targets"):
+                    all_t.extend([int(t) for t in ds.targets])
+                elif hasattr(ds, "labels"):
+                    all_t.extend(ds.labels.tolist())
+                elif hasattr(ds, "remapped_labels"):
+                    all_t.extend(ds.remapped_labels)
+            targets = torch.tensor(all_t, dtype=torch.long)
+        elif hasattr(dataset, "dataset"):
+            targets = torch.tensor(
+                [int(dataset.dataset.targets[i]) for i in dataset.indices], dtype=torch.long
+            )
+        else:
+            targets = torch.tensor([int(t) for t in dataset.targets], dtype=torch.long)
+
+    class_counts  = torch.bincount(targets, minlength=NUM_CLASSES).float()
+    class_counts  = torch.clamp(class_counts, min=1)
+    class_weights = 1.0 / class_counts
+    sample_weights = class_weights[targets]
+    print(f"[Dataset] Class weight range: {class_weights.min():.6f} — {class_weights.max():.6f}")
+    return sample_weights
+
+
 def load_emnist(data_dir: Path):
     """
     Ch. 6 workflow step: prepare data.
     Downloads EMNIST byclass via torchvision (~540 MB first run).
-    Splits training set into train + val using fixed seed for reproducibility.
-
-    EMNIST byclass: 697,932 train + 116,323 test, 62 classes.
-    Reference: Cohen et al. 2017.
-
-    torchvision note: EMNIST images are stored transposed in the raw binary
-    format. torchvision automatically corrects this for byclass split.
     """
     data_dir.mkdir(parents=True, exist_ok=True)
     print("[Dataset] Loading EMNIST byclass...")
@@ -186,7 +235,6 @@ def load_emnist(data_dir: Path):
         range(total), [train_count, val_count], generator=generator
     )
 
-    # Val subset uses non-augmented transforms
     train_ds = Subset(train_full, train_indices.indices)
     val_base = EMNIST(root=str(data_dir), split="byclass", train=True,
                       download=False, transform=get_transforms(augment=False))
@@ -194,16 +242,48 @@ def load_emnist(data_dir: Path):
 
     print(f"[Dataset] Train: {train_count:,}  |  Val: {val_count:,}  |  "
           f"Test: {len(test_ds):,}")
-    return train_ds, val_ds, test_ds
+
+    # Load supplementary datasets — EMNIST Balanced + Kaggle A-Z
+    supp_ds = None
+    if HAS_SUPPLEMENTARY:
+        print("[Dataset] Loading supplementary data...")
+        supp_ds = load_supplementary(
+            transform=get_transforms(augment=True),
+            use_balanced=True,
+            use_kaggle=True,
+            train=True,
+        )
+        if supp_ds is not None:
+            train_ds = ConcatDataset([train_ds, supp_ds])
+            print(f"[Dataset] Combined training set: {len(train_ds):,} samples")
+
+    return train_ds, val_ds, test_ds, supp_ds
 
 
-def make_dataloader(dataset, shuffle: bool = False) -> DataLoader:
+def make_dataloader(dataset, shuffle: bool = False,
+                    use_weighted_sampler: bool = False) -> DataLoader:
     """
-    PyTorch DataLoader — equivalent to tf.data pipeline with cache/prefetch.
-    Ch. 18 performance tip: pin_memory=True enables faster host→GPU transfers
-    by keeping data in pinned (page-locked) CPU RAM.
-    persistent_workers avoids Python process fork overhead between epochs on Windows.
+    FIX v2: Added WeightedRandomSampler support for training loader.
+    When use_weighted_sampler=True, overrides shuffle and samples classes equally.
+    Val/test loaders always use shuffle=False, use_weighted_sampler=False.
     """
+    if use_weighted_sampler:
+        # Use get_combined_weights if supplementary data provided, else per-class weights
+        sample_weights = get_class_weights(dataset)
+        sampler = WeightedRandomSampler(
+            weights=sample_weights,
+            num_samples=len(sample_weights),
+            replacement=True,
+        )
+        return DataLoader(
+            dataset,
+            batch_size=BATCH_SIZE,
+            sampler=sampler,           # mutually exclusive with shuffle
+            num_workers=NUM_WORKERS,
+            pin_memory=torch.cuda.is_available(),
+            persistent_workers=(NUM_WORKERS > 0),
+            drop_last=False,
+        )
     return DataLoader(
         dataset,
         batch_size=BATCH_SIZE,
@@ -216,55 +296,30 @@ def make_dataloader(dataset, shuffle: bool = False) -> DataLoader:
 
 
 # =============================================================================
-# 4. MODEL ARCHITECTURE (Ch. 3 nn.Module + Ch. 8 ConvNet + Ch. 9 residual/BN)
+# 4. MODEL ARCHITECTURE
 # =============================================================================
 
 class DepthwiseSeparableConv(nn.Module):
-    """
-    Ch. 9 depthwise separable convolution.
-    Standard Conv2D applies a filter jointly across all input channels.
-    Depthwise separable splits this into:
-      1. Depthwise conv: one filter per input channel (spatial features)
-      2. Pointwise conv: 1x1 conv to mix channels (cross-channel features)
-    Result: same representational power at ~8-9x fewer parameters.
-    Used in Xception architecture (Ch. 8) and MobileNet.
-    groups=in_channels in Conv2d implements the depthwise step.
-    """
+    """Ch. 9 depthwise separable convolution."""
     def __init__(self, in_ch: int, out_ch: int, stride: int = 1):
         super().__init__()
         self.depthwise  = nn.Conv2d(in_ch, in_ch, kernel_size=3, stride=stride,
                                     padding=1, groups=in_ch, bias=False)
         self.pointwise  = nn.Conv2d(in_ch, out_ch, kernel_size=1, bias=False)
-        self.bn         = nn.BatchNorm2d(out_ch)   # Ch. 9 BatchNorm
+        self.bn         = nn.BatchNorm2d(out_ch)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return F.relu(self.bn(self.pointwise(self.depthwise(x))), inplace=True)
 
 
 class ResidualBlock(nn.Module):
-    """
-    Ch. 9 residual block with BatchNormalization.
-
-    Architecture: Conv → BN → ReLU → Conv → BN → add_skip → ReLU
-
-    Ch. 9 explains residual connections solve vanishing gradients:
-    "the skip connection gives gradients a direct path backward through the
-    entire network depth, bypassing the Conv layers entirely if needed."
-
-    Ch. 9 BatchNorm placement: BN after Conv, before activation.
-    bias=False when followed by BN — BN has its own learnable bias (beta).
-
-    1x1 projection shortcut when in_channels != out_channels, so the skip
-    connection tensor shapes match for the Add operation.
-    """
+    """Ch. 9 residual block with BatchNormalization."""
     def __init__(self, in_ch: int, out_ch: int):
         super().__init__()
         self.conv1 = nn.Conv2d(in_ch,  out_ch, 3, padding=1, bias=False)
         self.bn1   = nn.BatchNorm2d(out_ch)
         self.conv2 = nn.Conv2d(out_ch, out_ch, 3, padding=1, bias=False)
         self.bn2   = nn.BatchNorm2d(out_ch)
-
-        # Ch. 9: projection shortcut when dimensions differ
         self.shortcut = (
             nn.Sequential(
                 nn.Conv2d(in_ch, out_ch, 1, bias=False),
@@ -273,108 +328,60 @@ class ResidualBlock(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Ch. 3 Listing 3.27: implement forward() computation
         residual = self.shortcut(x)
         x = F.relu(self.bn1(self.conv1(x)), inplace=True)
-        x = self.bn2(self.conv2(x))          # BN before adding skip
+        x = self.bn2(self.conv2(x))
         return F.relu(x + residual, inplace=True)
 
 
 class OCRConvNet(nn.Module):
     """
-    OCR ConvNet combining Ch. 8 architecture with Ch. 9 improvements.
-
-    Input:  (batch, 1, 32, 32)   grayscale character image
-    Output: (batch, 62)          logits for 62 character classes
-
-    Architecture:
-        Stem:    DepthwiseSeparableConv(1→32)   — Ch. 9 efficient feature extraction
-        Stage 1: ResidualBlock(32→64)  + MaxPool + SpatialDropout  — Ch. 8+9
-        Stage 2: ResidualBlock(64→128) + MaxPool + SpatialDropout  — Ch. 8+9
-        Stage 3: ResidualBlock(128→256)+ MaxPool                   — Ch. 8+9
-        Stage 4: ResidualBlock(256→256)                            — deeper = better
-        Pool:    AdaptiveAvgPool2d(1)   — Ch. 8 GlobalAveragePooling equivalent
-        Head:    Linear(256→256) → BN → ReLU → Dropout → Linear(256→62)
-
-    Parameters: ~2.4M   |   Saved size: ~9 MB
-    Better than Keras version: extra ResidualBlock at stage 4 adds depth without
-    requiring a larger input resolution, improving character discrimination.
+    OCR ConvNet — Ch. 8 architecture with Ch. 9 residual/BN improvements.
+    Input:  (batch, 1, 32, 32)
+    Output: (batch, 62)
     """
-
     def __init__(self, num_classes: int = NUM_CLASSES):
         super().__init__()
-
-        # Ch. 9: depthwise separable stem — efficient low-level feature extraction
-        self.stem = nn.Sequential(
-            DepthwiseSeparableConv(1, 32),
-        )
-
-        # Ch. 8 filter progression 32→64→128→256 with Ch. 9 residual blocks
+        self.stem = nn.Sequential(DepthwiseSeparableConv(1, 32))
         self.stage1 = nn.Sequential(
-            ResidualBlock(32, 64),
-            nn.MaxPool2d(2),           # 32×32 → 16×16
-            nn.Dropout2d(0.1),         # Ch. 5: SpatialDropout drops entire channels
+            ResidualBlock(32, 64), nn.MaxPool2d(2), nn.Dropout2d(0.1),
         )
         self.stage2 = nn.Sequential(
-            ResidualBlock(64, 128),
-            nn.MaxPool2d(2),           # 16×16 → 8×8
-            nn.Dropout2d(0.1),
+            ResidualBlock(64, 128), nn.MaxPool2d(2), nn.Dropout2d(0.1),
         )
         self.stage3 = nn.Sequential(
-            ResidualBlock(128, 256),
-            nn.MaxPool2d(2),           # 8×8 → 4×4
+            ResidualBlock(128, 256), nn.MaxPool2d(2),
         )
-        # Ch. 9: additional depth without downsampling — learns more abstract features
-        self.stage4 = ResidualBlock(256, 256)
-
-        # Ch. 8: GlobalAveragePooling — averages spatial dims to (batch, 256)
+        self.stage4    = ResidualBlock(256, 256)
         self.global_pool = nn.AdaptiveAvgPool2d(1)
-
-        # Classifier head — Ch. 8 Listing 8.26 pattern
-        # Ch. 5: Dropout(0.5) is standard for the penultimate Dense layer
         self.classifier = nn.Sequential(
             nn.Dropout(0.5),
             nn.Linear(256, 256),
-            nn.BatchNorm1d(256),       # Ch. 9: BN stabilizes deep FC layers too
+            nn.BatchNorm1d(256),
             nn.ReLU(inplace=True),
             nn.Dropout(0.3),
-            nn.Linear(256, num_classes),  # raw logits — CrossEntropyLoss applies softmax
+            nn.Linear(256, num_classes),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Ch. 3 Listing 3.27: forward() defines the computation.
-        Called via model(x) → __call__() → forward().
-        """
         x = self.stem(x)
         x = self.stage1(x)
         x = self.stage2(x)
         x = self.stage3(x)
         x = self.stage4(x)
-        x = self.global_pool(x)    # (batch, 256, 1, 1)
-        x = x.flatten(1)           # (batch, 256)
-        x = self.classifier(x)     # (batch, 62)
-        return x
+        x = self.global_pool(x)
+        x = x.flatten(1)
+        return self.classifier(x)
 
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
-        """Softmax probabilities for inference — not used during training."""
         return F.softmax(self.forward(x), dim=1)
 
 
 # =============================================================================
-# 5. EARLY STOPPING + CHECKPOINT
+# 5. EARLY STOPPING
 # =============================================================================
 
 class EarlyStopping:
-    """
-    Manual early stopping — equivalent to keras.callbacks.EarlyStopping
-    from Ch. 7 Listing 7.19. PyTorch has no built-in callback system,
-    so we implement the same logic explicitly.
-
-    Monitors val_loss. If no improvement for `patience` epochs, sets
-    self.stop = True. Saves best weights to disk on every improvement
-    (equivalent to ModelCheckpoint(save_best_only=True)).
-    """
     def __init__(self, patience: int, path: str):
         self.patience  = patience
         self.path      = path
@@ -386,76 +393,42 @@ class EarlyStopping:
         if val_loss < self.best_loss:
             self.best_loss = val_loss
             self.counter   = 0
-            # Save state_dict only — smaller file, portable across machines
             torch.save({"state_dict": model.state_dict(),
                         "val_loss": val_loss}, self.path)
-            print(f"  [Checkpoint] val_loss → {val_loss:.4f}  saved to {self.path}")
+            print(f"  [Checkpoint] val_loss → {val_loss:.4f}  saved")
         else:
             self.counter += 1
-            print(f"  [EarlyStopping] {self.counter}/{self.patience} epochs without improvement")
+            print(f"  [EarlyStopping] {self.counter}/{self.patience}")
             if self.counter >= self.patience:
                 self.stop = True
-                print("  [EarlyStopping] Halting training.")
+                print("  [EarlyStopping] Halting.")
 
 
 # =============================================================================
-# 6. TRAINING LOOP (Ch. 3 explicit training step)
+# 6. TRAINING LOOP
 # =============================================================================
 
-def train_one_epoch(model:     nn.Module,
-                    loader:    DataLoader,
-                    criterion: nn.Module,
-                    optimizer: optim.Optimizer,
-                    scaler:    torch.cuda.amp.GradScaler,
-                    scheduler,
-                    device:    torch.device) -> tuple:
-    """
-    Ch. 3 training step (Listing 3.27 expanded to full epoch loop):
-      1. Forward pass      — logits = model(images)
-      2. Compute loss      — loss = criterion(logits, labels)
-      3. Backward pass     — loss.backward()  [populates .grad on Parameters]
-      4. Clip gradients    — prevents exploding gradients in deeper networks
-      5. Update weights    — optimizer.step()
-      6. Reset gradients   — optimizer.zero_grad()  [MUST happen before next forward]
-
-    Ch. 18 mixed precision via torch.autocast + GradScaler:
-      - autocast: runs eligible ops in float16 (conv, matmul), keeps others in float32
-      - GradScaler: multiplies loss by a scale factor before backward() to prevent
-        float16 gradient underflow, then unscales before optimizer.step()
-      This is the PyTorch equivalent of keras.optimizers.LossScaleOptimizer (Ch. 18).
-    """
-    model.train()   # activates Dropout and BatchNorm training-mode behavior
-    total_loss    = 0.0
-    total_correct = 0
-    total_samples = 0
+def train_one_epoch(model, loader, criterion, optimizer, scaler,
+                    scheduler, device) -> tuple:
+    model.train()
+    total_loss = total_correct = total_samples = 0
 
     for images, labels in loader:
-        # Non-blocking transfers use pinned memory for faster host→GPU copies
         images = images.to(device, non_blocking=True)
         labels = labels.to(device, non_blocking=True)
-
-        # Ch. 3: zero_grad() before forward — prevents gradient accumulation
         optimizer.zero_grad()
 
-        # Ch. 18: autocast runs forward pass in float16 where safe
         with torch.autocast(device_type="cuda" if device.type == "cuda" else "cpu",
                             enabled=USE_AMP and device.type == "cuda"):
             logits = model(images)
             loss   = criterion(logits, labels)
 
-        # Ch. 3: loss.backward() computes gradients via backpropagation
-        # GradScaler scales loss upward to prevent float16 gradient underflow
         scaler.scale(loss).backward()
-
-        # Gradient clipping — Ch. 9 best practice for deep residual networks
         scaler.unscale_(optimizer)
         nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-
-        # Ch. 3: optimizer.step() applies gradients to update weights
         scaler.step(optimizer)
         scaler.update()
 
-        # OneCycleLR steps per batch (not per epoch)
         if scheduler is not None:
             scheduler.step()
 
@@ -467,29 +440,44 @@ def train_one_epoch(model:     nn.Module,
 
 
 @torch.no_grad()
-def evaluate(model:     nn.Module,
-             loader:    DataLoader,
-             criterion: nn.Module,
-             device:    torch.device) -> tuple:
+def evaluate(model, loader, criterion, device,
+             per_class: bool = False) -> tuple:
     """
-    Ch. 3: torch.no_grad() skips building the computation graph entirely —
-    no backward pass needed at evaluation time, saving memory and compute.
-    model.eval() disables Dropout and puts BatchNorm into inference mode
-    (uses running mean/variance instead of batch statistics).
+    FIX v2: Added per_class accuracy logging.
+    When per_class=True, prints per-class accuracy sorted by worst performers.
+    Call with per_class=True on the test set to identify specific class failures.
     """
     model.eval()
-    total_loss    = 0.0
-    total_correct = 0
-    total_samples = 0
+    total_loss = total_correct = total_samples = 0
+
+    if per_class:
+        class_correct = torch.zeros(NUM_CLASSES)
+        class_total   = torch.zeros(NUM_CLASSES)
 
     for images, labels in loader:
         images = images.to(device, non_blocking=True)
         labels = labels.to(device, non_blocking=True)
         logits = model(images)
         loss   = criterion(logits, labels)
+        preds  = logits.argmax(1)
+
         total_loss    += loss.item() * images.size(0)
-        total_correct += (logits.argmax(1) == labels).sum().item()
+        total_correct += (preds == labels).sum().item()
         total_samples += images.size(0)
+
+        if per_class:
+            for c in range(NUM_CLASSES):
+                mask = labels == c
+                class_correct[c] += (preds[mask] == labels[mask]).sum().item()
+                class_total[c]   += mask.sum().item()
+
+    if per_class and class_total.sum() > 0:
+        class_acc = class_correct / class_total.clamp(min=1)
+        worst = class_acc.argsort()[:15]
+        print("\n  [Per-Class] 15 worst-performing classes:")
+        for idx in worst:
+            print(f"    '{LABEL_MAP[idx]}' (class {idx:2d}): "
+                  f"{class_acc[idx]*100:.1f}%  ({int(class_total[idx])} samples)")
 
     return total_loss / total_samples, total_correct / total_samples
 
@@ -498,20 +486,7 @@ def evaluate(model:     nn.Module,
 # 7. LEARNING RATE SCHEDULING
 # =============================================================================
 
-def build_scheduler(optimizer: optim.Optimizer,
-                    train_loader: DataLoader) -> optim.lr_scheduler.OneCycleLR:
-    """
-    OneCycleLR — cosine annealing with linear warmup.
-    Outperforms Ch. 7's ReduceLROnPlateau for ConvNets because it is
-    proactive rather than reactive: it doesn't wait for the loss to stall.
-
-    Phase 1 (first 30%): linear warmup from lr/10 to max_lr
-    Phase 2 (last 70%): cosine decay from max_lr down to lr/1000
-
-    Warm-up phase prevents large initial updates from destabilizing BatchNorm
-    statistics early in training — especially important with large batch sizes.
-    Called per-batch (inside train_one_epoch), not per-epoch.
-    """
+def build_scheduler(optimizer, train_loader):
     return optim.lr_scheduler.OneCycleLR(
         optimizer,
         max_lr=LEARNING_RATE,
@@ -525,165 +500,25 @@ def build_scheduler(optimizer: optim.Optimizer,
 
 
 # =============================================================================
-# 8. HYPERPARAMETER OPTIMIZATION WITH OPTUNA (Ch. 18 equivalent)
-# =============================================================================
-
-def run_hyperparameter_search(train_ds, val_ds,
-                              device: torch.device,
-                              n_trials: int = 20):
-    """
-    Ch. 18 hyperparameter optimization — implemented via Optuna, the PyTorch
-    ecosystem equivalent of KerasTuner BayesianOptimization.
-    Both use Bayesian optimization (TPE sampler in Optuna) to intelligently
-    explore the hyperparameter space rather than random search.
-
-    Searches over: filter counts, dense units, dropout rates, learning rate,
-    weight decay — the same search space as the Keras KerasTuner version.
-
-    Install: pip install optuna
-    """
-    try:
-        import optuna
-        optuna.logging.set_verbosity(optuna.logging.WARNING)
-    except ImportError:
-        print("[HPO] optuna not installed. pip install optuna")
-        return None
-
-    train_loader = make_dataloader(train_ds, shuffle=True)
-    val_loader   = make_dataloader(val_ds)
-
-    def objective(trial):
-        # Ch. 18: replace fixed values with trial.suggest_* ranges
-        filters1 = trial.suggest_categorical("filters1", [32, 64, 96])
-        filters2 = trial.suggest_categorical("filters2", [64, 128, 192])
-        filters3 = trial.suggest_categorical("filters3", [128, 256, 384])
-        dropout  = trial.suggest_float("dropout", 0.3, 0.6, step=0.1)
-        lr       = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
-        wd       = trial.suggest_float("weight_decay", 1e-5, 1e-3, log=True)
-
-        # Build a trial-specific model variant
-        class TrialModel(nn.Module):
-            def __init__(self):
-                super().__init__()
-                self.stem   = nn.Sequential(DepthwiseSeparableConv(1, 32))
-                self.stage1 = nn.Sequential(ResidualBlock(32, filters1), nn.MaxPool2d(2))
-                self.stage2 = nn.Sequential(ResidualBlock(filters1, filters2), nn.MaxPool2d(2))
-                self.stage3 = nn.Sequential(ResidualBlock(filters2, filters3), nn.MaxPool2d(2))
-                self.pool   = nn.AdaptiveAvgPool2d(1)
-                self.head   = nn.Sequential(
-                    nn.Dropout(dropout),
-                    nn.Linear(filters3, 256), nn.ReLU(inplace=True),
-                    nn.Dropout(dropout * 0.6),
-                    nn.Linear(256, NUM_CLASSES),
-                )
-            def forward(self, x):
-                x = self.stem(x); x = self.stage1(x)
-                x = self.stage2(x); x = self.stage3(x)
-                x = self.pool(x).flatten(1)
-                return self.head(x)
-
-        m         = TrialModel().to(device)
-        opt       = optim.Adam(m.parameters(), lr=lr, weight_decay=wd)
-        criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
-        scaler    = torch.cuda.amp.GradScaler(enabled=USE_AMP and device.type == "cuda")
-        best_val  = float("inf")
-        patience  = 0
-
-        for epoch in range(15):    # short runs per trial to save time
-            train_one_epoch(m, train_loader, criterion, opt, scaler, None, device)
-            val_loss, _ = evaluate(m, val_loader, criterion, device)
-            if val_loss < best_val:
-                best_val = val_loss; patience = 0
-            else:
-                patience += 1
-                if patience >= 3: break   # aggressive early stop during search
-
-        return best_val
-
-    print(f"\n[HPO] Running Optuna BayesianOptimization — {n_trials} trials")
-    study = optuna.create_study(direction="minimize",
-                                sampler=optuna.samplers.TPESampler(seed=42))
-    study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
-
-    best = study.best_params
-    print(f"\n[HPO] Best hyperparameters found:")
-    for k, v in best.items():
-        print(f"  {k}: {v}")
-    return best
-
-
-# =============================================================================
-# 9. MODEL ENSEMBLING (Ch. 18)
-# =============================================================================
-
-def ensemble_predict(models: list,
-                     loader: DataLoader,
-                     device: torch.device) -> np.ndarray:
-    """
-    Ch. 18 model ensembling — averages softmax predictions from multiple
-    independently trained models. Works because each model makes different
-    errors due to different random initializations and training dynamics;
-    averaging cancels individual biases.
-
-    Ch. 18: "diversity is strength — ensemble models that are as different
-    as possible while being as good as possible."
-
-    Best ensembles for this OCR task: combine models trained from different
-    random seeds, OR combine the PyTorch OCRConvNet with the Keras Xception
-    model (entirely different architectures = maximum diversity).
-    """
-    all_preds = []
-    for i, model in enumerate(models):
-        model.eval()
-        batch_preds = []
-        with torch.no_grad():
-            for images, _ in loader:
-                images = images.to(device)
-                probs  = F.softmax(model(images), dim=1)
-                batch_preds.append(probs.cpu().numpy())
-        all_preds.append(np.concatenate(batch_preds, axis=0))
-        print(f"[Ensemble] Model {i+1}/{len(models)} predictions collected.")
-
-    # Ch. 18: simple equal-weight average
-    return np.mean(all_preds, axis=0)
-
-
-def ensemble_accuracy(models: list,
-                      loader: DataLoader,
-                      device: torch.device) -> float:
-    """Evaluates ensemble accuracy on a labeled dataset."""
-    preds  = ensemble_predict(models, loader, device)
-    labels = np.concatenate([y.numpy() for _, y in loader])
-    acc    = (preds.argmax(1) == labels).mean()
-    print(f"[Ensemble] Accuracy: {acc:.4f}  ({acc*100:.2f}%)")
-    return acc
-
-
-# =============================================================================
-# 10. LOGGING AND PLOTTING
+# 8. LOGGING AND PLOTTING
 # =============================================================================
 
 def plot_history(history: dict, path: str = PLOT_PATH):
-    """Training curves — mirrors Keras plot_history() output."""
     ep = range(1, len(history["train_loss"]) + 1)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
-    fig.suptitle("EMNIST OCR (PyTorch) — Training History",
-                 fontsize=12, fontweight="bold")
+    fig.suptitle("EMNIST OCR (PyTorch) — Training History", fontsize=12, fontweight="bold")
     ax1.plot(ep, history["train_acc"], "b-o", markersize=4, label="Train")
     ax1.plot(ep, history["val_acc"],   "r-o", markersize=4, label="Val")
-    ax1.set_title("Accuracy"); ax1.set_xlabel("Epoch")
-    ax1.legend(); ax1.grid(True, alpha=0.3)
+    ax1.set_title("Accuracy"); ax1.set_xlabel("Epoch"); ax1.legend(); ax1.grid(True, alpha=0.3)
     ax2.plot(ep, history["train_loss"], "b-o", markersize=4, label="Train")
     ax2.plot(ep, history["val_loss"],   "r-o", markersize=4, label="Val")
-    ax2.set_title("Loss"); ax2.set_xlabel("Epoch")
-    ax2.legend(); ax2.grid(True, alpha=0.3)
+    ax2.set_title("Loss"); ax2.set_xlabel("Epoch"); ax2.legend(); ax2.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(path, dpi=150); plt.close()
     print(f"[Plot] Saved to {path}")
 
 
 def save_log(history: dict, path: str = LOG_PATH):
-    """Per-epoch CSV log — equivalent to Keras CSVLogger callback (Ch. 7)."""
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=[
             "epoch", "train_loss", "train_acc", "val_loss", "val_acc", "lr"
@@ -702,14 +537,10 @@ def save_log(history: dict, path: str = LOG_PATH):
 
 
 # =============================================================================
-# 11. SAVE / LOAD / EXPORT
+# 9. SAVE / LOAD / EXPORT
 # =============================================================================
 
 def save_model(model: nn.Module, path: str = FINAL_MODEL_PATH):
-    """
-    torch.save() — Ch. 3 pattern. Saves state_dict (weights only) plus
-    metadata. Requires this file's architecture definition to reload.
-    """
     torch.save({
         "state_dict":  model.state_dict(),
         "num_classes": NUM_CLASSES,
@@ -721,25 +552,13 @@ def save_model(model: nn.Module, path: str = FINAL_MODEL_PATH):
     print(f"[Save] {path}  ({size_mb:.1f} MB)")
 
 
-def load_saved_model(path: str = FINAL_MODEL_PATH,
-                     device: torch.device = None) -> nn.Module:
-    """Reload weights from checkpoint. Works on CPU-only machines."""
-    if device is None:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    ckpt  = torch.load(path, map_location=device)
-    model = OCRConvNet(num_classes=ckpt.get("num_classes", NUM_CLASSES))
-    model.load_state_dict(ckpt["state_dict"])
-    model.to(device).eval()
-    print(f"[Load] Model loaded from {path}")
-    return model
-
-
 def export_onnx(model: nn.Module, path: str = ONNX_PATH):
     """
-    ONNX export — framework-agnostic portable format.
-    On the school computer: pip install onnxruntime (~10 MB, no CUDA needed)
-    then load with onnxruntime.InferenceSession for CPU inference.
-    Dynamic axes allow any batch size at inference time.
+    ONNX export.
+    IMPORTANT: inference pipeline must normalize input as:
+        arr = arr / 255.0
+        arr = (arr - 0.5) / 0.5
+    before passing to the model. This matches training normalization.
     """
     model.eval()
     dummy = torch.zeros(1, 1, IMG_HEIGHT, IMG_WIDTH)
@@ -754,39 +573,22 @@ def export_onnx(model: nn.Module, path: str = ONNX_PATH):
 
 
 def export_quantized(model: nn.Module, path: str = QUANTIZED_PATH):
-    """
-    Ch. 18 int8 quantization for faster CPU inference.
-    Post-training dynamic quantization: converts Linear layer weights from
-    float32 to int8. No calibration data needed — scaling computed per-batch.
-    Result: ~2-3x faster CPU inference, ~4x smaller weight storage.
-    Ideal for running on the school computer without a GPU.
-    """
+    """Ch. 18 int8 quantization for faster CPU inference."""
     model.eval().cpu()
     quantized = torch.quantization.quantize_dynamic(
-        model,
-        qconfig_spec={nn.Linear},   # quantize Linear layers only
-        dtype=torch.qint8,
+        model, qconfig_spec={nn.Linear}, dtype=torch.qint8,
     )
     torch.save(quantized, path)
     size_mb = Path(path).stat().st_size / 1024**2
     print(f"[Quantize] int8 model saved to {path}  ({size_mb:.1f} MB)")
-    print(f"           Load with: model = torch.load('{path}')")
     return quantized
 
 
 # =============================================================================
-# 12. INFERENCE
+# 10. INFERENCE
 # =============================================================================
 
-def predict_image(model:      nn.Module,
-                  image_path: str,
-                  device:     torch.device,
-                  top_k:      int = 5) -> list:
-    """
-    Single character image → top-k (character, confidence) predictions.
-    Accepts any image format, any size. Handles both GPU and CPU inference.
-    Uses the non-augmented transform pipeline for clean inference.
-    """
+def predict_image(model, image_path, device, top_k=5):
     from PIL import Image
     transform = get_transforms(augment=False)
     img = Image.open(image_path).convert("L")
@@ -798,70 +600,46 @@ def predict_image(model:      nn.Module,
     return [(LABEL_MAP[i], float(probs[i])) for i in top_i]
 
 
-def predict_string(model:       nn.Module,
-                   image_paths: list,
-                   device:      torch.device) -> str:
-    """Predict a sequence of character crop images and return as a string."""
-    return "".join(predict_image(model, p, device, top_k=1)[0][0]
-                   for p in image_paths)
-
-
 # =============================================================================
-# 13. MAIN
+# 11. MAIN
 # =============================================================================
 
 def main():
     print("=" * 60)
-    print("  EMNIST OCR — Pure PyTorch")
+    print("  EMNIST OCR — Pure PyTorch  (v2 — corrected augmentation)")
     print(f"  PyTorch {torch.__version__}  |  AMP: {USE_AMP}")
     print(f"  Output: {BASE_DIR}")
+    print(f"  Resolution: {IMG_SIZE}x{IMG_SIZE}  |  Batch: {BATCH_SIZE}")
+    print("  Changes: rotation ±5°, shear 3°, WeightedRandomSampler")
     print("=" * 60)
 
     BASE_DIR.mkdir(parents=True, exist_ok=True)
     device = setup_device()
 
-    # ── Ch. 6 Universal ML Workflow ──────────────────────────────────────────
+    train_ds, val_ds, test_ds, supp_ds = load_emnist(DATA_DIR)
 
-    # Step 1: Prepare data
-    train_ds, val_ds, test_ds = load_emnist(DATA_DIR)
-    train_loader = make_dataloader(train_ds, shuffle=True)
+    # FIX v2: use weighted sampler for training to address class imbalance
+    train_loader = make_dataloader(train_ds, use_weighted_sampler=True)
     val_loader   = make_dataloader(val_ds)
     test_loader  = make_dataloader(test_ds)
 
-    # Step 2: Build model
     model = OCRConvNet(NUM_CLASSES).to(device)
     total = sum(p.numel() for p in model.parameters())
     print(f"\n[Model] OCRConvNet")
     print(f"  Parameters : {total:,}")
     print(f"  Est. size  : {total * 4 / 1024**2:.1f} MB (float32)")
 
-    # Ch. 18: CrossEntropyLoss with label_smoothing
-    # Label smoothing prevents overconfident predictions by targeting
-    # 0.9 instead of 1.0 — a Ch. 18 best practice for classification
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
-
-    # Ch. 5: weight_decay adds L2 penalty to all weights via optimizer
-    optimizer = optim.Adam(model.parameters(),
-                           lr=LEARNING_RATE,
-                           weight_decay=WEIGHT_DECAY)
-
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.05)
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     scheduler = build_scheduler(optimizer, train_loader)
-
-    # Ch. 18 GradScaler — PyTorch's LossScaleOptimizer equivalent
-    scaler = torch.cuda.amp.GradScaler(
-        enabled=USE_AMP and device.type == "cuda"
-    )
-
+    scaler    = torch.amp.GradScaler('cuda', enabled=USE_AMP and device.type == "cuda")
     early_stop = EarlyStopping(patience=PATIENCE, path=CHECKPOINT_PATH)
 
-    # Step 3: Train
     print(f"\n[Train] Starting — max epochs: {EPOCHS} | batch: {BATCH_SIZE}")
-    history = {k: [] for k in ["train_loss", "train_acc",
-                                "val_loss",   "val_acc", "lr"]}
+    history = {k: [] for k in ["train_loss", "train_acc", "val_loss", "val_acc", "lr"]}
 
     for epoch in range(1, EPOCHS + 1):
         t0 = time.time()
-
         train_loss, train_acc = train_one_epoch(
             model, train_loader, criterion, optimizer, scaler, scheduler, device
         )
@@ -875,55 +653,38 @@ def main():
               f"lr: {current_lr:.2e}  [{elapsed:.0f}s]")
 
         for k, v in [("train_loss", train_loss), ("train_acc", train_acc),
-                     ("val_loss", val_loss),   ("val_acc", val_acc),
-                     ("lr", current_lr)]:
+                     ("val_loss", val_loss), ("val_acc", val_acc), ("lr", current_lr)]:
             history[k].append(v)
 
         early_stop(val_loss, model)
         if early_stop.stop:
             break
 
-    # Step 4: Reload best weights
     print(f"\n[Train] Loading best checkpoint...")
-    ckpt = torch.load(CHECKPOINT_PATH, map_location=device)
+    ckpt = torch.load(CHECKPOINT_PATH, map_location=device, weights_only=False)
     model.load_state_dict(ckpt["state_dict"])
 
-    # Step 5: Evaluate on test set — Ch. 6: only touch test set once, at end
-    test_loss, test_acc = evaluate(model, test_loader, criterion, device)
+    # FIX v2: run per-class accuracy on test set to identify remaining failures
+    print("\n[Eval] Running per-class accuracy analysis on test set...")
+    test_loss, test_acc = evaluate(model, test_loader, criterion, device, per_class=True)
     print(f"\n{'='*40}")
     print(f"  Test accuracy : {test_acc:.4f}  ({test_acc*100:.2f}%)")
     print(f"  Test loss     : {test_loss:.4f}")
     print(f"{'='*40}")
 
-    # Step 6: Save artifacts
     plot_history(history)
     save_log(history)
     save_model(model)
 
-    # Step 7: Export for deployment
     model_cpu = OCRConvNet(NUM_CLASSES)
     model_cpu.load_state_dict(
-        torch.load(FINAL_MODEL_PATH, map_location="cpu")["state_dict"]
+        torch.load(FINAL_MODEL_PATH, map_location="cpu",
+                   weights_only=False)["state_dict"]
     )
-    export_onnx(model_cpu)             # for school computer (onnxruntime)
-    export_quantized(model_cpu)        # Ch. 18 int8 for faster CPU inference
-
-    # Step 8: Inference demo
-    demo = BASE_DIR / "sample_char.png"
-    if demo.exists():
-        print(f"\n[Inference] Predicting {demo}")
-        results = predict_image(model, str(demo), device, top_k=5)
-        print("  Top 5 predictions:")
-        for char, conf in results:
-            bar = "\u2588" * int(conf * 40)
-            print(f"    '{char}'  {conf:.4f}  {bar}")
-    else:
-        print(f"\n[Inference] Drop a character image at {demo} to test.")
+    export_onnx(model_cpu)
+    export_quantized(model_cpu)
 
     print(f"\n[Done] All files saved to {BASE_DIR}")
-    print(f"\n[School demo] Copy these files to your USB/GitHub:")
-    print(f"  {BASE_DIR / 'ocr_model_quantized.pt'}  (fastest CPU inference)")
-    print(f"  {BASE_DIR / 'ocr_model.onnx'}           (no PyTorch needed, just onnxruntime)")
 
 
 if __name__ == "__main__":

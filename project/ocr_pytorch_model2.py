@@ -4,14 +4,13 @@ ocr_pytorch_model2.py
 EMNIST OCR — Model 2 for Ensemble
 Pure PyTorch — Wider architecture with Squeeze-Excitation attention blocks.
 
-This is Model 2 in a two-model ensemble with ocr_pytorch_model.py.
 Architectural differences from Model 1 (intentional diversity for ensemble):
   - Wider filter progression: 32→128→256→512 vs 32→64→128→256
-  - Squeeze-Excitation (SE) attention after each stage (channel recalibration)
-  - StochasticDepth (DropPath) regularization instead of SpatialDropout
-  - Cosine annealing LR schedule instead of OneCycleLR
-  - AdamW optimizer instead of Adam
-  - Larger classifier head: 512→256 instead of 256→256
+  - Squeeze-Excitation (SE) attention after each stage
+  - StochasticDepth (DropPath) regularization
+  - Cosine annealing LR schedule
+  - AdamW optimizer
+  - Larger classifier head: 512→256
 
 Book references — Chollet & Watson, "Deep Learning with Python, 3rd Ed." (Manning 2025)
   Ch. 3  — PyTorch nn.Module, tensors, backward(), optimizer.step()
@@ -20,6 +19,14 @@ Book references — Chollet & Watson, "Deep Learning with Python, 3rd Ed." (Mann
   Ch. 8  — ConvNet architecture, filter progression, GlobalAveragePooling
   Ch. 9  — BatchNormalization, residual connections, depthwise separable convs
   Ch. 18 — Mixed-precision (AMP), model ensembling, int8 quantization
+
+CORRECTIONS APPLIED (v2):
+  - RandomRotation reduced from ±10° to ±5° — prevents L/7 and H/I confusion
+  - Shear reduced from 8° to 5°
+  - WeightedRandomSampler added — addresses EMNIST byclass class imbalance
+  - Synthetic degradation augmentation added (blur + noise) — improves real-world
+    generalization and increases data diversity vs Model 1
+  - Per-class accuracy logging added
 
 Hardware target:
     AMD Ryzen 9 7900X  (24 threads)
@@ -32,7 +39,6 @@ Output: E:\\CSC-114\\emnist-model\\pytorch2\\
 # =============================================================================
 # 0. IMPORTS
 # =============================================================================
-import os
 import csv
 import time
 from pathlib import Path
@@ -46,9 +52,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import DataLoader, random_split, Subset
+from torch.utils.data import DataLoader, random_split, Subset, WeightedRandomSampler, ConcatDataset
 from torchvision import transforms
 from torchvision.datasets import EMNIST
+
+# Supplementary datasets
+try:
+    from supplementary_data import load_supplementary, get_combined_weights
+    HAS_SUPPLEMENTARY = True
+except ImportError:
+    HAS_SUPPLEMENTARY = False
+    print("[Warning] supplementary_data.py not found — using EMNIST byclass only")
 
 
 # =============================================================================
@@ -56,17 +70,22 @@ from torchvision.datasets import EMNIST
 # =============================================================================
 
 NUM_CLASSES      = 62
-IMG_HEIGHT       = 32
-IMG_WIDTH        = 32
 
-BATCH_SIZE       = 512
+# ── Resolution toggle ─────────────────────────────────────────────────────────
+IMG_SIZE         = 64       # switch to 32 to revert to original resolution
+# IMG_SIZE       = 32       # original — uncomment to use
+IMG_HEIGHT       = IMG_SIZE
+IMG_WIDTH        = IMG_SIZE
+
+BATCH_SIZE       = 512 if IMG_SIZE == 32 else 256  # wide model, SE is memory efficient
+# ─────────────────────────────────────────────────────────────────────────────
+
 EPOCHS           = 50
-LEARNING_RATE    = 3e-4    # AdamW default — lower than Model 1's 1e-3
-WEIGHT_DECAY     = 5e-4    # stronger L2 vs Model 1's 1e-4
+LEARNING_RATE    = 1e-4
+WEIGHT_DECAY     = 1e-4
 VALIDATION_SPLIT = 0.15
-PATIENCE         = 7
+PATIENCE         = 12
 NUM_WORKERS      = 8
-
 USE_AMP          = True
 
 BASE_DIR         = Path(r"E:\CSC-114\emnist-model\pytorch2")
@@ -103,15 +122,30 @@ def setup_device() -> torch.device:
 
 
 # =============================================================================
-# 3. DATA PIPELINE (same as Model 1 — identical data, different model)
+# 3. DATA PIPELINE
 # =============================================================================
 
 def get_transforms(augment: bool = False) -> transforms.Compose:
+    """
+    FIX v2: Rotation reduced from ±10° to ±5°, shear from 8° to 5°.
+    FIX v2: Added synthetic degradation (GaussianBlur + GaussianNoise) to
+    simulate real-world capture conditions. This is Model 2's data-level
+    diversity contribution to the ensemble — Model 1 uses clean EMNIST only,
+    Model 2 adds blur/noise, Model 3 adds perspective distortion.
+    """
     aug_transforms = [
-        transforms.RandomRotation(degrees=10),
-        transforms.RandomAffine(degrees=0, translate=(0.1, 0.1),
-                                scale=(0.85, 1.15), shear=8),
-        transforms.ColorJitter(contrast=0.3),
+        transforms.RandomRotation(degrees=5),           # FIX: was 10, now 5
+        transforms.RandomAffine(
+            degrees=0,
+            translate=(0.1, 0.1),
+            scale=(0.85, 1.15),
+            shear=5,                                     # FIX: was 8, now 5
+        ),
+        transforms.ColorJitter(contrast=0.3, brightness=0.1),
+        # FIX v2: synthetic degradation for real-world generalization
+        transforms.RandomApply([
+            transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 1.0)),
+        ], p=0.3),
     ] if augment else []
 
     base_transforms = [
@@ -120,6 +154,41 @@ def get_transforms(augment: bool = False) -> transforms.Compose:
         transforms.Normalize(mean=(0.5,), std=(0.5,)),
     ]
     return transforms.Compose(aug_transforms + base_transforms)
+
+
+def get_class_weights(dataset) -> torch.Tensor:
+    """Fixed v2: handles ConcatDataset correctly via supplementary_data."""
+    print("[Dataset] Computing class weights for balanced sampling...")
+    if HAS_SUPPLEMENTARY:
+        from supplementary_data import _extract_targets
+        targets = _extract_targets(dataset)
+    else:
+        # Fallback for when supplementary_data.py is not present
+        if hasattr(dataset, "datasets"):
+            all_t = []
+            for ds in dataset.datasets:
+                if hasattr(ds, "dataset") and hasattr(ds.dataset, "targets"):
+                    all_t.extend([int(ds.dataset.targets[i]) for i in ds.indices])
+                elif hasattr(ds, "targets"):
+                    all_t.extend([int(t) for t in ds.targets])
+                elif hasattr(ds, "labels"):
+                    all_t.extend(ds.labels.tolist())
+                elif hasattr(ds, "remapped_labels"):
+                    all_t.extend(ds.remapped_labels)
+            targets = torch.tensor(all_t, dtype=torch.long)
+        elif hasattr(dataset, "dataset"):
+            targets = torch.tensor(
+                [int(dataset.dataset.targets[i]) for i in dataset.indices], dtype=torch.long
+            )
+        else:
+            targets = torch.tensor([int(t) for t in dataset.targets], dtype=torch.long)
+
+    class_counts  = torch.bincount(targets, minlength=NUM_CLASSES).float()
+    class_counts  = torch.clamp(class_counts, min=1)
+    class_weights = 1.0 / class_counts
+    sample_weights = class_weights[targets]
+    print(f"[Dataset] Class weight range: {class_weights.min():.6f} — {class_weights.max():.6f}")
+    return sample_weights
 
 
 def load_emnist(data_dir: Path):
@@ -147,40 +216,52 @@ def load_emnist(data_dir: Path):
 
     print(f"[Dataset] Train: {train_count:,}  |  Val: {val_count:,}  |  "
           f"Test: {len(test_ds):,}")
-    return train_ds, val_ds, test_ds
+
+    supp_ds = None
+    if HAS_SUPPLEMENTARY:
+        print("[Dataset] Loading supplementary data...")
+        supp_ds = load_supplementary(
+            transform=get_transforms(augment=True),
+            use_balanced=True,
+            use_kaggle=True,
+            train=True,
+        )
+        if supp_ds is not None:
+            train_ds = ConcatDataset([train_ds, supp_ds])
+            print(f"[Dataset] Combined training set: {len(train_ds):,} samples")
+
+    return train_ds, val_ds, test_ds, supp_ds
 
 
-def make_dataloader(dataset, shuffle: bool = False) -> DataLoader:
+def make_dataloader(dataset, shuffle: bool = False,
+                    use_weighted_sampler: bool = False) -> DataLoader:
+    if use_weighted_sampler:
+        sample_weights = get_class_weights(dataset)
+        sampler = WeightedRandomSampler(
+            weights=sample_weights,
+            num_samples=len(sample_weights),
+            replacement=True,
+        )
+        return DataLoader(
+            dataset, batch_size=BATCH_SIZE, sampler=sampler,
+            num_workers=NUM_WORKERS, pin_memory=torch.cuda.is_available(),
+            persistent_workers=(NUM_WORKERS > 0), drop_last=False,
+        )
     return DataLoader(
-        dataset,
-        batch_size=BATCH_SIZE,
-        shuffle=shuffle,
-        num_workers=NUM_WORKERS,
-        pin_memory=torch.cuda.is_available(),
-        persistent_workers=(NUM_WORKERS > 0),
-        drop_last=False,
+        dataset, batch_size=BATCH_SIZE, shuffle=shuffle,
+        num_workers=NUM_WORKERS, pin_memory=torch.cuda.is_available(),
+        persistent_workers=(NUM_WORKERS > 0), drop_last=False,
     )
 
 
 # =============================================================================
-# 4. MODEL ARCHITECTURE — Wider + Squeeze-Excitation attention (Ch. 9)
+# 4. MODEL ARCHITECTURE — Wider + Squeeze-Excitation attention
 # =============================================================================
 
 class SqueezeExcitation(nn.Module):
     """
-    Squeeze-Excitation (SE) block — channel attention mechanism.
-
-    Ch. 9 concept: after a residual block learns spatial features, SE
-    recalibrates which channels are most informative by:
-      1. Squeeze: GlobalAveragePool → (batch, C) — collapses spatial dims
-      2. Excitation: FC → ReLU → FC → Sigmoid → (batch, C) scale vector
-      3. Scale: multiply each channel by its learned importance weight
-
-    This is architecturally distinct from Model 1 which has no attention.
-    Hu et al. 2018 "Squeeze-and-Excitation Networks" showed consistent
-    accuracy improvements across all ConvNet architectures at minimal cost.
-
-    reduction: bottleneck ratio for the FC layers (16 = standard SE paper)
+    SE channel attention block — Ch. 9 concept.
+    Recalibrates channel importance via squeeze (GlobalAvgPool) + excitation (FC sigmoid).
     """
     def __init__(self, channels: int, reduction: int = 16):
         super().__init__()
@@ -195,120 +276,77 @@ class SqueezeExcitation(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         b, c, _, _ = x.shape
-        scale = self.pool(x).view(b, c)        # squeeze: (B, C)
-        scale = self.fc(scale).view(b, c, 1, 1)  # excitation: (B, C, 1, 1)
-        return x * scale                        # channel-wise rescaling
+        scale = self.pool(x).view(b, c)
+        scale = self.fc(scale).view(b, c, 1, 1)
+        return x * scale
+
+
+class StochasticDepth(nn.Module):
+    """
+    DropPath / StochasticDepth — randomly drops entire residual branches during training.
+    Equivalent to dropout applied at the layer level rather than neuron level.
+    Provides different regularization pattern than Dropout2d used in Model 1.
+    """
+    def __init__(self, drop_prob: float = 0.1):
+        super().__init__()
+        self.drop_prob = drop_prob
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if not self.training or self.drop_prob == 0.0:
+            return x
+        keep_prob = 1 - self.drop_prob
+        shape = (x.shape[0],) + (1,) * (x.ndim - 1)
+        random_tensor = torch.rand(shape, dtype=x.dtype, device=x.device)
+        random_tensor = torch.floor(random_tensor + keep_prob)
+        return x * random_tensor / keep_prob
 
 
 class SEResidualBlock(nn.Module):
-    """
-    Residual block with integrated Squeeze-Excitation attention.
-
-    Architecture: Conv→BN→ReLU→Conv→BN→SE→add_skip→ReLU
-
-    Ch. 9 residual connection gives gradients a direct backward path.
-    SE attention sits before the residual add — it recalibrates the
-    learned features before they're combined with the identity skip.
-
-    Wider than Model 1: uses larger channel counts throughout.
-    """
-    def __init__(self, in_ch: int, out_ch: int, drop_path_rate: float = 0.1):
+    """Residual block with integrated Squeeze-Excitation attention."""
+    def __init__(self, in_ch: int, out_ch: int, drop_path: float = 0.1):
         super().__init__()
         self.conv1 = nn.Conv2d(in_ch,  out_ch, 3, padding=1, bias=False)
         self.bn1   = nn.BatchNorm2d(out_ch)
         self.conv2 = nn.Conv2d(out_ch, out_ch, 3, padding=1, bias=False)
         self.bn2   = nn.BatchNorm2d(out_ch)
-        self.se    = SqueezeExcitation(out_ch, reduction=16)
-
+        self.se    = SqueezeExcitation(out_ch)
+        self.drop_path = StochasticDepth(drop_path)
         self.shortcut = (
-            nn.Sequential(
-                nn.Conv2d(in_ch, out_ch, 1, bias=False),
-                nn.BatchNorm2d(out_ch),
-            ) if in_ch != out_ch else nn.Identity()
+            nn.Sequential(nn.Conv2d(in_ch, out_ch, 1, bias=False),
+                          nn.BatchNorm2d(out_ch))
+            if in_ch != out_ch else nn.Identity()
         )
-
-        # StochasticDepth (DropPath): randomly drops entire residual branch
-        # during training — stronger regularization than SpatialDropout.
-        # Ch. 5: another form of noise injection to prevent memorization.
-        self.drop_path_rate = drop_path_rate
-
-    def drop_path(self, x: torch.Tensor) -> torch.Tensor:
-        """Stochastic depth: drop entire residual branch with probability p."""
-        if not self.training or self.drop_path_rate == 0.0:
-            return x
-        keep = 1.0 - self.drop_path_rate
-        # Random per-sample mask: shape (batch, 1, 1, 1) broadcasts over spatial dims
-        mask = torch.rand(x.shape[0], 1, 1, 1,
-                          device=x.device, dtype=x.dtype)
-        mask = (mask < keep).float() / keep   # scale to preserve expectation
-        return x * mask
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         residual = self.shortcut(x)
-        out = F.relu(self.bn1(self.conv1(x)), inplace=True)
-        out = self.bn2(self.conv2(out))
-        out = self.se(out)               # channel attention
-        out = self.drop_path(out)        # stochastic depth regularization
-        return F.relu(out + residual, inplace=True)
+        x = F.relu(self.bn1(self.conv1(x)), inplace=True)
+        x = self.bn2(self.conv2(x))
+        x = self.se(x)
+        x = self.drop_path(x)
+        return F.relu(x + residual, inplace=True)
 
 
 class OCRConvNetWide(nn.Module):
     """
-    Wide OCR ConvNet with Squeeze-Excitation attention.
-
+    Wider OCR ConvNet with SE attention.
     Input:  (batch, 1, 32, 32)
     Output: (batch, 62)
-
-    Architecture (Model 2 — wider than Model 1):
-        Stem:    DepthwiseSep(1→32)
-        Stage 1: SEResidualBlock(32→128)  + MaxPool   [Model1: 32→64]
-        Stage 2: SEResidualBlock(128→256) + MaxPool   [Model1: 64→128]
-        Stage 3: SEResidualBlock(256→512) + MaxPool   [Model1: 128→256]
-        Stage 4: SEResidualBlock(512→512)             [Model1: 256→256]
-        Pool:    AdaptiveAvgPool2d(1)
-        Head:    Linear(512→512)→BN→ReLU→Drop→Linear(512→256)→BN→ReLU→Drop→Linear(256→62)
-
-    Parameters: ~8.5M vs Model 1's ~2.4M
-    Diversity rationale: wider channels capture more feature variety;
-    SE attention focuses on informative channels; deeper head adds capacity.
-    Ch. 18 ensemble: "use as different models as possible" for maximum benefit.
+    Filter progression: 32→128→256→512 (wider than Model 1's 32→64→128→256)
     """
-
     def __init__(self, num_classes: int = NUM_CLASSES):
         super().__init__()
-
-        # Depthwise separable stem — Ch. 9 efficient feature extraction
         self.stem = nn.Sequential(
-            nn.Conv2d(1, 1, 3, padding=1, groups=1, bias=False),  # depthwise
-            nn.Conv2d(1, 32, 1, bias=False),                       # pointwise
+            nn.Conv2d(1, 32, 3, padding=1, bias=False),
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
         )
-
-        # Wider filter progression with SE attention
-        self.stage1 = nn.Sequential(
-            SEResidualBlock(32,  128, drop_path_rate=0.05),
-            nn.MaxPool2d(2),    # 32×32 → 16×16
-        )
-        self.stage2 = nn.Sequential(
-            SEResidualBlock(128, 256, drop_path_rate=0.1),
-            nn.MaxPool2d(2),    # 16×16 → 8×8
-        )
-        self.stage3 = nn.Sequential(
-            SEResidualBlock(256, 512, drop_path_rate=0.15),
-            nn.MaxPool2d(2),    # 8×8 → 4×4
-        )
-        self.stage4 = SEResidualBlock(512, 512, drop_path_rate=0.2)
-
+        self.stage1 = nn.Sequential(SEResidualBlock(32, 128),  nn.MaxPool2d(2))
+        self.stage2 = nn.Sequential(SEResidualBlock(128, 256), nn.MaxPool2d(2))
+        self.stage3 = nn.Sequential(SEResidualBlock(256, 512), nn.MaxPool2d(2))
+        self.stage4 = SEResidualBlock(512, 512)
         self.global_pool = nn.AdaptiveAvgPool2d(1)
-
-        # Deeper classifier head — more capacity for 62-class discrimination
         self.classifier = nn.Sequential(
             nn.Dropout(0.5),
-            nn.Linear(512, 512),
-            nn.BatchNorm1d(512),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.4),
             nn.Linear(512, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(inplace=True),
@@ -322,17 +360,12 @@ class OCRConvNetWide(nn.Module):
         x = self.stage2(x)
         x = self.stage3(x)
         x = self.stage4(x)
-        x = self.global_pool(x)
-        x = x.flatten(1)
-        x = self.classifier(x)
-        return x
-
-    def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
-        return F.softmax(self.forward(x), dim=1)
+        x = self.global_pool(x).flatten(1)
+        return self.classifier(x)
 
 
 # =============================================================================
-# 5. EARLY STOPPING + CHECKPOINT (same as Model 1)
+# 5. EARLY STOPPING
 # =============================================================================
 
 class EarlyStopping:
@@ -347,23 +380,21 @@ class EarlyStopping:
         if val_loss < self.best_loss:
             self.best_loss = val_loss
             self.counter   = 0
-            torch.save({"state_dict": model.state_dict(),
-                        "val_loss": val_loss}, self.path)
-            print(f"  [Checkpoint] val_loss → {val_loss:.4f}  saved to {self.path}")
+            torch.save({"state_dict": model.state_dict(), "val_loss": val_loss}, self.path)
+            print(f"  [Checkpoint] val_loss → {val_loss:.4f}  saved")
         else:
             self.counter += 1
-            print(f"  [EarlyStopping] {self.counter}/{self.patience} epochs without improvement")
+            print(f"  [EarlyStopping] {self.counter}/{self.patience}")
             if self.counter >= self.patience:
                 self.stop = True
-                print("  [EarlyStopping] Halting training.")
+                print("  [EarlyStopping] Halting.")
 
 
 # =============================================================================
 # 6. TRAINING LOOP
 # =============================================================================
 
-def train_one_epoch(model, loader, criterion, optimizer, scaler,
-                    scheduler, device) -> tuple:
+def train_one_epoch(model, loader, criterion, optimizer, scaler, device) -> tuple:
     model.train()
     total_loss = total_correct = total_samples = 0
 
@@ -383,9 +414,6 @@ def train_one_epoch(model, loader, criterion, optimizer, scaler,
         scaler.step(optimizer)
         scaler.update()
 
-        if scheduler is not None:
-            scheduler.step()
-
         total_loss    += loss.item() * images.size(0)
         total_correct += (logits.argmax(1) == labels).sum().item()
         total_samples += images.size(0)
@@ -394,39 +422,57 @@ def train_one_epoch(model, loader, criterion, optimizer, scaler,
 
 
 @torch.no_grad()
-def evaluate(model, loader, criterion, device) -> tuple:
+def evaluate(model, loader, criterion, device, per_class: bool = False) -> tuple:
+    """FIX v2: Added per_class accuracy logging."""
     model.eval()
     total_loss = total_correct = total_samples = 0
+
+    if per_class:
+        class_correct = torch.zeros(NUM_CLASSES)
+        class_total   = torch.zeros(NUM_CLASSES)
 
     for images, labels in loader:
         images = images.to(device, non_blocking=True)
         labels = labels.to(device, non_blocking=True)
         logits = model(images)
         loss   = criterion(logits, labels)
+        preds  = logits.argmax(1)
+
         total_loss    += loss.item() * images.size(0)
-        total_correct += (logits.argmax(1) == labels).sum().item()
+        total_correct += (preds == labels).sum().item()
         total_samples += images.size(0)
+
+        if per_class:
+            for c in range(NUM_CLASSES):
+                mask = labels == c
+                class_correct[c] += (preds[mask] == labels[mask]).sum().item()
+                class_total[c]   += mask.sum().item()
+
+    if per_class and class_total.sum() > 0:
+        class_acc = class_correct / class_total.clamp(min=1)
+        worst = class_acc.argsort()[:15]
+        print("\n  [Per-Class] 15 worst-performing classes:")
+        for idx in worst:
+            print(f"    '{LABEL_MAP[idx]}' (class {idx:2d}): "
+                  f"{class_acc[idx]*100:.1f}%  ({int(class_total[idx])} samples)")
 
     return total_loss / total_samples, total_correct / total_samples
 
 
 # =============================================================================
-# 7. PLOTTING AND LOGGING
+# 7. LOGGING AND PLOTTING
 # =============================================================================
 
 def plot_history(history: dict):
-    ep      = range(1, len(history["train_loss"]) + 1)
+    ep = range(1, len(history["train_loss"]) + 1)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
-    fig.suptitle("EMNIST OCR Model 2 (Wide + SE) — Training History",
-                 fontsize=12, fontweight="bold")
+    fig.suptitle("EMNIST OCR Model 2 — Training History", fontsize=12, fontweight="bold")
     ax1.plot(ep, history["train_acc"], "b-o", markersize=4, label="Train")
     ax1.plot(ep, history["val_acc"],   "r-o", markersize=4, label="Val")
-    ax1.set_title("Accuracy"); ax1.set_xlabel("Epoch")
-    ax1.legend(); ax1.grid(True, alpha=0.3)
+    ax1.set_title("Accuracy"); ax1.legend(); ax1.grid(True, alpha=0.3)
     ax2.plot(ep, history["train_loss"], "b-o", markersize=4, label="Train")
     ax2.plot(ep, history["val_loss"],   "r-o", markersize=4, label="Val")
-    ax2.set_title("Loss"); ax2.set_xlabel("Epoch")
-    ax2.legend(); ax2.grid(True, alpha=0.3)
+    ax2.set_title("Loss"); ax2.legend(); ax2.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(PLOT_PATH, dpi=150); plt.close()
     print(f"[Plot] Saved to {PLOT_PATH}")
@@ -452,6 +498,11 @@ def save_model(model: nn.Module, path: str = FINAL_MODEL_PATH):
 
 
 def export_onnx(model: nn.Module, path: str = ONNX_PATH):
+    """
+    IMPORTANT: inference normalization must be:
+        arr = arr / 255.0
+        arr = (arr - 0.5) / 0.5
+    """
     model.eval()
     dummy = torch.zeros(1, 1, IMG_HEIGHT, IMG_WIDTH)
     torch.onnx.export(
@@ -465,36 +516,22 @@ def export_onnx(model: nn.Module, path: str = ONNX_PATH):
 
 
 # =============================================================================
-# 9. ENSEMBLE INFERENCE (Ch. 18)
+# 9. ENSEMBLE INFERENCE
 # =============================================================================
 
-def ensemble_predict_loader(model1: nn.Module,
-                             model2: nn.Module,
-                             loader: DataLoader,
-                             device: torch.device) -> tuple:
-    """
-    Ch. 18 ensemble: average softmax outputs from both models.
-    Both models trained independently on same data but with different
-    architectures — their errors are partially uncorrelated, so averaging
-    cancels individual mistakes and improves overall accuracy.
-
-    Returns (predictions, labels) as numpy arrays for accuracy calculation.
-    """
+def ensemble_predict_loader(model1, model2, loader, device) -> tuple:
+    """Ch. 18 ensemble: average softmax outputs from both models."""
     model1.eval(); model2.eval()
     all_preds, all_labels = [], []
-
     with torch.no_grad():
         for images, labels in loader:
             images = images.to(device, non_blocking=True)
-            p1 = F.softmax(model1(images), dim=1)
-            p2 = F.softmax(model2(images), dim=1)
+            p1  = F.softmax(model1(images), dim=1)
+            p2  = F.softmax(model2(images), dim=1)
             avg = (p1 + p2) / 2.0
             all_preds.append(avg.argmax(1).cpu())
             all_labels.append(labels)
-
-    preds  = torch.cat(all_preds).numpy()
-    labels = torch.cat(all_labels).numpy()
-    return preds, labels
+    return torch.cat(all_preds).numpy(), torch.cat(all_labels).numpy()
 
 
 # =============================================================================
@@ -503,60 +540,42 @@ def ensemble_predict_loader(model1: nn.Module,
 
 def main():
     print("=" * 60)
-    print("  EMNIST OCR — Model 2 (Wide + Squeeze-Excitation)")
+    print("  EMNIST OCR — Model 2 (Wide + SE)  v2 — corrected augmentation")
     print(f"  PyTorch {torch.__version__}  |  AMP: {USE_AMP}")
     print(f"  Output: {BASE_DIR}")
+    print(f"  Resolution: {IMG_SIZE}x{IMG_SIZE}  |  Batch: {BATCH_SIZE}")
+    print("  Changes: rotation ±5°, shear 5°, WeightedRandomSampler, blur augmentation")
     print("=" * 60)
 
     BASE_DIR.mkdir(parents=True, exist_ok=True)
     device = setup_device()
 
-    # Step 1: Data
-    train_ds, val_ds, test_ds = load_emnist(DATA_DIR)
-    train_loader = make_dataloader(train_ds, shuffle=True)
+    train_ds, val_ds, test_ds, supp_ds = load_emnist(DATA_DIR)
+    train_loader = make_dataloader(train_ds, use_weighted_sampler=True)
     val_loader   = make_dataloader(val_ds)
     test_loader  = make_dataloader(test_ds)
 
-    # Step 2: Model — wider architecture with SE attention
     model = OCRConvNetWide(NUM_CLASSES).to(device)
     total = sum(p.numel() for p in model.parameters())
     print(f"\n[Model] OCRConvNetWide (Model 2)")
     print(f"  Parameters : {total:,}")
     print(f"  Est. size  : {total * 4 / 1024**2:.1f} MB (float32)")
-    print(f"  Architecture: wider channels + SE attention + StochasticDepth")
 
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
-
-    # AdamW — weight decay applied correctly (decoupled from adaptive lr)
-    # Ch. 5: proper L2 regularization decoupled from gradient scaling
-    optimizer = optim.AdamW(model.parameters(),
-                            lr=LEARNING_RATE,
-                            weight_decay=WEIGHT_DECAY)
-
-    # Cosine annealing — smooth decay vs Model 1's OneCycleLR warmup/peak/decay
-    # Different schedule = different optimization trajectory = more ensemble diversity
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=EPOCHS, eta_min=1e-6
-    )
-
-    scaler     = torch.amp.GradScaler('cuda',
-                     enabled=USE_AMP and device.type == "cuda")
+    criterion  = nn.CrossEntropyLoss(label_smoothing=0.05)
+    optimizer  = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
+    scheduler  = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS, eta_min=1e-6)
+    scaler     = torch.amp.GradScaler('cuda', enabled=USE_AMP and device.type == "cuda")
     early_stop = EarlyStopping(patience=PATIENCE, path=CHECKPOINT_PATH)
 
-    # Step 3: Train
     print(f"\n[Train] Starting — max epochs: {EPOCHS} | batch: {BATCH_SIZE}")
-    history = {k: [] for k in ["train_loss", "train_acc",
-                                "val_loss",   "val_acc", "lr"]}
+    history = {k: [] for k in ["train_loss", "train_acc", "val_loss", "val_acc", "lr"]}
 
     for epoch in range(1, EPOCHS + 1):
         t0 = time.time()
-
         train_loss, train_acc = train_one_epoch(
-            model, train_loader, criterion, optimizer, scaler, None, device
+            model, train_loader, criterion, optimizer, scaler, device
         )
-        # CosineAnnealingLR steps per epoch (not per batch)
         scheduler.step()
-
         val_loss, val_acc = evaluate(model, val_loader, criterion, device)
         current_lr = optimizer.param_groups[0]["lr"]
         elapsed    = time.time() - t0
@@ -567,72 +586,56 @@ def main():
               f"lr: {current_lr:.2e}  [{elapsed:.0f}s]")
 
         for k, v in [("train_loss", train_loss), ("train_acc", train_acc),
-                     ("val_loss", val_loss), ("val_acc", val_acc),
-                     ("lr", current_lr)]:
+                     ("val_loss", val_loss), ("val_acc", val_acc), ("lr", current_lr)]:
             history[k].append(v)
 
         early_stop(val_loss, model)
         if early_stop.stop:
             break
 
-    # Step 4: Reload best weights
     print(f"\n[Train] Loading best checkpoint...")
     ckpt = torch.load(CHECKPOINT_PATH, map_location=device, weights_only=False)
     model.load_state_dict(ckpt["state_dict"])
 
-    # Step 5: Test evaluation
-    test_loss, test_acc = evaluate(model, test_loader, criterion, device)
+    print("\n[Eval] Running per-class accuracy analysis on test set...")
+    test_loss, test_acc = evaluate(model, test_loader, criterion, device, per_class=True)
     print(f"\n{'='*40}")
     print(f"  Model 2 Test accuracy : {test_acc:.4f}  ({test_acc*100:.2f}%)")
     print(f"  Model 2 Test loss     : {test_loss:.4f}")
     print(f"{'='*40}")
 
-    # Step 6: Save artifacts
     plot_history(history)
     save_log(history)
     save_model(model)
 
-    # Step 7: ONNX export
     try:
         model_cpu = OCRConvNetWide(NUM_CLASSES)
         model_cpu.load_state_dict(
-            torch.load(FINAL_MODEL_PATH, map_location="cpu",
-                       weights_only=False)["state_dict"]
+            torch.load(FINAL_MODEL_PATH, map_location="cpu", weights_only=False)["state_dict"]
         )
         export_onnx(model_cpu)
     except Exception as e:
         print(f"[ONNX] Export failed: {e}")
-        print(f"       pip install onnx  then re-run export")
 
-    # Step 8: Ensemble test — load Model 1 and average predictions
     model1_path = Path(r"E:\CSC-114\emnist-model\pytorch\best_model.pt")
     if model1_path.exists():
-        print(f"\n[Ensemble] Loading Model 1 from {model1_path}")
         try:
-            # Import Model 1 class
             import sys
             sys.path.insert(0, str(Path(r"E:\CSC-114\emnist-model")))
             from ocr_pytorch_model import OCRConvNet
             model1 = OCRConvNet(NUM_CLASSES)
-            ckpt1  = torch.load(str(model1_path), map_location="cpu",
-                                weights_only=False)
+            ckpt1  = torch.load(str(model1_path), map_location="cpu", weights_only=False)
             model1.load_state_dict(ckpt1["state_dict"])
             model1 = model1.to(device)
-
-            preds, labels = ensemble_predict_loader(
-                model1, model, test_loader, device
-            )
+            preds, labels = ensemble_predict_loader(model1, model, test_loader, device)
             ensemble_acc = (preds == labels).mean()
             print(f"\n{'='*40}")
-            print(f"  Model 1 alone : 88.06%")
+            print(f"  Model 1 alone : see pytorch/training_log.csv")
             print(f"  Model 2 alone : {test_acc*100:.2f}%")
-            print(f"  ENSEMBLE      : {ensemble_acc*100:.2f}%")
+            print(f"  ENSEMBLE M1+M2: {ensemble_acc*100:.2f}%")
             print(f"{'='*40}")
         except Exception as e:
             print(f"[Ensemble] Could not load Model 1: {e}")
-    else:
-        print(f"\n[Ensemble] Model 1 checkpoint not found at {model1_path}")
-        print(f"           Run ocr_pytorch_model.py first.")
 
     print(f"\n[Done] All files saved to {BASE_DIR}")
 

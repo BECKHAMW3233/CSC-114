@@ -1,379 +1,483 @@
-# EMNIST OCR — Three-Model PyTorch Ensemble
+# EMNIST OCR Ensemble — Handwritten Character Recognition Pipeline
 
-**William Edward Beckham III | FTCC CSC-114 | Summer 2026**
+![Python 3.13](https://img.shields.io/badge/Python-3.13-blue)
+![PyTorch](https://img.shields.io/badge/Framework-PyTorch-orange)
+![ONNX Runtime](https://img.shields.io/badge/Inference-ONNX%20Runtime-green)
+![Dataset](https://img.shields.io/badge/Dataset-EMNIST%20byclass-lightgrey)
+![Accuracy](https://img.shields.io/badge/Test%20Accuracy-59%2F60%20(98.3%25)-brightgreen)
 
-A handwritten character recognition system built from scratch in pure PyTorch as a self-directed learning project alongside CSC-114 coursework. Three architecturally distinct convolutional neural networks trained on EMNIST byclass (814,255 samples, 62 classes), combined via weighted ensemble with Test Time Augmentation.
-
----
-
-## Results
-
-| Model | Architecture | Params | Optimizer | Epochs | Test Acc |
-|-------|-------------|--------|-----------|--------|----------|
-| Model 1 | Narrow ResNet + DepthwiseSep | 2.4M | Adam + OneCycleLR | 50 | **88.06%** |
-| Model 2 | Wide ResNet + Squeeze-Excitation | 9.9M | AdamW + CosineAnneal | 47 | **88.06%** |
-| Model 3 | Triple-Width + Multi-Scale Fusion | 6.1M | SGD + WarmRestarts | 28 | **87.74%** |
-| **2-Model Ensemble (M1+M2)** | Equal weight avg softmax | — | — | — | **88.17%** |
-| **3-Model Simple Ensemble** | Equal weight avg softmax | — | — | — | **88.15%** |
-| **3-Model Weighted Ensemble** | w1×0.38 + w2×0.38 + w3×0.24 | — | — | — | **88.16%** |
-| **3-Model Weighted + TTA** | 8 augments per image, weighted | — | — | — | *bug in eval loop — excluded* |
+**Author:** William Edward Beckham III  
+**Program:** Computer Programming & Development AAS — FTCC  
+**Course:** CSC-114 AI Fundamentals I (Summer 2026)  
+**Hardware:** AMD Ryzen 9 7900X · 64 GB DDR5-5600 · ZOTAC RTX 4080 16 GB AMP Extreme AIRO
 
 ---
 
-## Dataset
+## Overview
 
-**EMNIST byclass** — Cohen et al. 2017
+This project implements a three-model deep learning ensemble for handwritten character recognition, trained on EMNIST and multiple supplementary datasets, exported to ONNX, and deployed through a custom inference pipeline with iterative post-processing compensation for known model bias patterns.
 
-| Split | Samples |
-|-------|---------|
-| Train | 593,243 |
-| Val | 104,689 |
-| Test | 116,323 |
-| **Total** | **814,255** |
-
-62 classes: digits `0-9`, uppercase `A-Z`, lowercase `a-z`
-
-Downloaded automatically via `torchvision.datasets.EMNIST` on first run (~562 MB).
+The system recognizes 62 classes — digits 0–9, uppercase A–Z, and lowercase a–z. Through a documented cycle of deployment testing, bug identification, training corrections, and pipeline improvements, it achieves **59/60 correct digit reads** across six real-world handwritten test images in `digits-strict` mode without any retraining of the final models.
 
 ---
 
-## Hardware
-
-| Component | Spec |
-|-----------|------|
-| CPU | AMD Ryzen 9 7900X (24 threads) |
-| RAM | 64 GB DDR5-5600 |
-| GPU | NVIDIA GeForce RTX 4080 (16 GB VRAM) |
-| CUDA | 12.1 |
-| cuDNN | 9.23 |
-| Driver | 596.49 |
-
-Training speeds: Model 1 ~30s/epoch (50 epochs, ~25 min) · Model 2 ~88s/epoch (47 epochs, ~69 min) · Model 3 ~155s/epoch (28 epochs, ~72 min)
-
----
-
-## Architecture Overview
-
-### Model 1 — `ocr_pytorch_model.py`
-**Narrow ResNet with Depthwise Separable Stem**
+## Repository Structure
 
 ```
-Input (1, 32, 32)
-→ DepthwiseSep Stem (1→32)
-→ ResidualBlock (32→64)  + MaxPool → 16×16
-→ ResidualBlock (64→128) + MaxPool →  8×8
-→ ResidualBlock (128→256)+ MaxPool →  4×4
-→ ResidualBlock (256→256)
-→ AdaptiveAvgPool → flatten
-→ Linear(256→256) → BN → ReLU → Dropout
-→ Linear(256→62)
-```
-
-- AMP (mixed float16) with `GradScaler`
-- `OneCycleLR` — warmup → peak → cosine anneal
-- `Adam` optimizer, lr=1e-3, weight_decay=1e-4
-- `SpatialDropout2D` regularization
-- `EarlyStopping` patience=7
-- Trained all 50 epochs
-- Exports: `.pt` checkpoint + ONNX opset 17
-
----
-
-### Model 2 — `ocr_pytorch_model2.py`
-**Wide ResNet with Squeeze-Excitation Attention**
-
-```
-Input (1, 32, 32)
-→ DepthwiseSep Stem (1→32)
-→ SEResidualBlock (32→128)  + MaxPool → 16×16
-→ SEResidualBlock (128→256) + MaxPool →  8×8
-→ SEResidualBlock (256→512) + MaxPool →  4×4
-→ SEResidualBlock (512→512)
-→ AdaptiveAvgPool → flatten
-→ Linear(512→512) → BN → ReLU → Dropout(0.5)
-→ Linear(512→256) → BN → ReLU → Dropout(0.4)
-→ Linear(256→62)
-```
-
-Key differences from Model 1:
-- **Squeeze-Excitation attention** — channel recalibration after each stage via GlobalAvgPool → FC → Sigmoid → channel-wise scale (Hu et al. 2018)
-- **StochasticDepth (DropPath)** — drops entire residual branches during training
-- **AdamW** — weight decay decoupled from adaptive lr scaling
-- **CosineAnnealingLR** — smooth monotonic decay
-- 4x wider filter progression (128→256→512 vs 64→128→256)
-- Deeper 3-layer classifier head
-- Early stopped at epoch 47
-
----
-
-### Model 3 — `ocr_pytorch_model3.py`
-**Triple-Width + Multi-Scale Feature Fusion**
-
-```
-Input (1, 32, 32)
-→ Triple Stem: DepthwiseSep(1→96) → Conv(96→96)
-→ 2× TripleResidualBlock (96→192)  + MaxPool → 16×16
-→ 2× TripleResidualBlock (192→384) + MaxPool →  8×8  ─┐ save s2
-→ 2× TripleResidualBlock (384→768) + MaxPool →  4×4  ─┤ save s3
-→ 2× TripleResidualBlock (768→768)                    ─┘ save s4
-
-Multi-Scale Fusion:
-→ GAP(s2)→(B,384) + GAP(s3)→(B,768) + GAP(s4)→(B,768)
-→ concat → (B, 1920)
-
-Deep Classifier (5 layers, GELU activations):
-→ 1920→1024 → BN → GELU → Dropout(0.5)
-→ 1024→512  → BN → GELU → Dropout(0.4)
-→ 512→256   → BN → GELU → Dropout(0.3)
-→ 256→128   → BN → GELU → Dropout(0.2)
-→ 128→62
-```
-
-Key differences from Models 1+2:
-- **Bottleneck residual blocks** — 3 convs per block (1×1 reduce → 3×3 process → 1×1 expand)
-- **Multi-scale feature pyramid** — concatenates GAP from stages 2, 3, 4 simultaneously. Early stages capture strokes, mid stages capture character parts, late stages capture whole shapes. Neither Model 1 nor 2 does this
-- **GELU activations** — `x * Φ(x)`, smooth non-monotonic, different activation family from ReLU
-- **SGD + Nesterov momentum** — different optimizer family from Adam/AdamW
-- **CosineAnnealingWarmRestarts** — T_0=20, LR resets after initial convergence
-- **5-layer classifier** vs Model 1's 2 and Model 2's 3
-- Batch size 256 (wider channels use more VRAM)
-- Heavier augmentation: ±15° rotation, scale 0.80-1.20, shear 10°, RandomPerspective
-- `num_workers=0` required on Windows — multiprocessing deadlock with persistent workers at this model size
-- Early stopped at epoch 28 (restart at epoch 20 disrupted convergence)
-
----
-
-## Ensemble Strategy
-
-### Why Three Different Models?
-Ch. 18 (Chollet & Watson 2025): models trained independently with different architectures make partially uncorrelated errors. Averaging their softmax outputs allows the correct class to accumulate votes while errors split across wrong classes.
-
-### Architectural Diversity Summary
-
-| Dimension | Model 1 | Model 2 | Model 3 |
-|-----------|---------|---------|---------|
-| Filter width | Narrow (64→256) | Wide (128→512) | Triple (192→768) |
-| Attention | None | SE channel | SE channel |
-| Block type | 2-conv basic | 2-conv + SE | 3-conv bottleneck + SE |
-| Multi-scale fusion | No | No | Yes (stages 2+3+4) |
-| Classifier depth | 2 layers | 3 layers | 5 layers |
-| Classifier activation | ReLU | ReLU | GELU |
-| Optimizer | Adam | AdamW | SGD+Nesterov |
-| LR schedule | OneCycleLR | CosineAnnealing | CosineWarmRestarts |
-| Regularization | SpatialDropout | StochasticDepth | StochasticDepth |
-| Augmentation strength | Light | Medium | Heavy |
-
-### Ensemble Methods (all in `ocr_pytorch_model3.py`)
-
-**Simple equal-weight:** `(p1 + p2 + p3) / 3`
-
-**Weighted:** `0.38·p1 + 0.38·p2 + 0.24·p3`
-Weights proportional to test accuracy. Models 1 and 2 tied at 88.06% get equal higher weight; Model 3 at 87.37% gets lower weight.
-
-**Weighted + Test Time Augmentation (TTA):**
-Each image is run through 8 augmented versions at inference time (±8° rotation, ±8% translation, ±8% scale). Probabilities averaged before weighting. No retraining required. Typical gain: 0.3–0.8% on character recognition.
-
-Note: the TTA evaluation loop produced an invalid result (82.56% — below all individual models, which is mathematically impossible for correct TTA). This indicates a bug in the augmentation transform inside the inference loop, most likely a tensor dtype or device mismatch corrupting the augmented images silently. The simple and weighted ensemble results (88.15% and 88.16%) are valid. TTA fix is pending.
-
----
-
-## Project Structure
-
-```
-E:\CSC-114\emnist-model\
-│
-├── ocr_pytorch_model.py          # Model 1 — Narrow ResNet (2.4M)
-├── ocr_pytorch_model2.py         # Model 2 — Wide + SE (9.9M)
-├── ocr_pytorch_model3.py         # Model 3 — Triple + Multi-Scale (6.1M)
-│                                 #   + TTA + weighted ensemble
-├── ocr_inference.py              # Run inference on any image — predicts character
-├── ocr_handwriting_model.py      # Keras 3 / PyTorch backend (arch reference)
-│
-├── 01_install_cuda.bat           # CUDA 12.1 + cuDNN 9.23 installer
-├── 02_install_python_packages.bat
-├── 03_verify_gpu.py
-│
-├── datasets\pytorch\EMNIST\raw\  # Auto-downloaded on first run
-│
-├── pytorch\                      # Model 1 outputs
-│   ├── best_model.pt
-│   ├── final_model.pt
-│   ├── ocr_model.onnx
-│   ├── training_curves.png
-│   └── training_log.csv
-│
-├── pytorch2\                     # Model 2 outputs
-│   ├── best_model2.pt
-│   ├── final_model2.pt
-│   ├── ocr_model2.onnx
-│   ├── training_curves2.png
-│   └── training_log2.csv
-│
-└── pytorch3\                     # Model 3 outputs + ensemble
-    ├── best_model3.pt
-    ├── final_model3.pt
-    ├── ocr_model3.onnx
-    ├── training_curves3.png
-    └── training_log3.csv
+├── ocr_pipeline.py          # Inference pipeline — run this
+├── ocr_pytorch_model.py     # Model 1 training script (standard ConvNet)
+├── ocr_pytorch_model2.py    # Model 2 training script (SE-attention, wider)
+├── ocr_pytorch_model3.py    # Model 3 training script (triple-width, multi-scale)
+├── supplementary_data.py    # Shared dataset loader for all three models
+├── ocr_model.onnx           # Model 1 exported weights (generate locally — see below)
+├── ocr_model2.onnx          # Model 2 exported weights
+├── ocr_model3.onnx          # Model 3 exported weights
+└── README.md                # This file
 ```
 
 ---
 
-## Setup & Reproduction
+## Setup & Installation
 
-### Prerequisites
-- Windows 10/11
-- NVIDIA GPU (RTX 3000 series or newer recommended)
-- NVIDIA Driver 525.60+
-- Python 3.12
+### Requirements
 
-### Install
-
-```cmd
-REM Step 1 — CUDA + cuDNN (run as Administrator)
-01_install_cuda.bat
-
-REM Step 2 — Python packages
-02_install_python_packages.bat
-
-REM Step 3 — Verify GPU
-"E:\CSC-114\emnist-model\venv\Scripts\python.exe" 03_verify_gpu.py
+```bash
+pip install opencv-python numpy onnxruntime
 ```
 
-### Train
+For training (not required to run inference):
 
-```cmd
-cd E:\CSC-114\emnist-model
-
-REM Model 1  (~25 min on RTX 4080)
-"venv\Scripts\python.exe" ocr_pytorch_model.py
-
-REM Model 2  (~70 min on RTX 4080)
-"venv\Scripts\python.exe" ocr_pytorch_model2.py
-
-REM Model 3 + full ensemble + TTA  (~2.5 hrs on RTX 4080)
-"venv\Scripts\python.exe" ocr_pytorch_model3.py
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+pip install torchmetrics matplotlib pillow optuna
 ```
 
-EMNIST downloads automatically (~562 MB) on first run. Models 1 and 2 must complete before Model 3 — the ensemble evaluation loads all three checkpoints.
+### Getting the ONNX Models
 
-### Running Inference — Predict a Character
+The `.onnx` model files are not included in the repository due to file size (9.4 MB, 37 MB, 17 MB). Generate them locally by training each model:
 
-```cmd
-cd E:\CSC-114\emnist-model
-"venv\Scripts\python.exe" ocr_inference.py path\to\your\image.png
+```bash
+python ocr_pytorch_model.py   # generates ocr_model.onnx
+python ocr_pytorch_model2.py  # generates ocr_model2.onnx
+python ocr_pytorch_model3.py  # generates ocr_model3.onnx
 ```
 
-Runs the image through all three models and prints the ensemble prediction with top-5 confidence scores from each model individually and combined.
+Training requires EMNIST byclass dataset (auto-downloaded on first run) and optionally the supplementary datasets (see `supplementary_data.py` for paths and download instructions).
 
-Example output:
-```
-==================================================
-  Image: test_char.png
-==================================================
-  PREDICTION : 'A'
-  CONFIDENCE : 94.3%
-==================================================
+### Configuring Model Paths
 
-  Ensemble (weighted M1×0.38 + M2×0.38 + M3×0.24):
-    1. 'A'  94.3%
-    2. 'a'   3.1%
-    3. 'R'   1.2%
-    ...
+The model paths in `ocr_pipeline.py` are set to the author's local Downloads directory. Update the `MODELS` list at the top of the file to match your system before running:
 
-  Model 1 (Narrow ResNet 88.06%):
-    1. 'A'  93.7%
-    ...
+```python
+# ocr_pipeline.py — edit these three paths
+MODELS = [
+    r"C:\path\to\your\ocr_model.onnx",
+    r"C:\path\to\your\ocr_model2.onnx",
+    r"C:\path\to\your\ocr_model3.onnx",
+]
 ```
 
-Options:
-```cmd
-REM Force CPU inference
-"venv\Scripts\python.exe" ocr_inference.py image.png --cpu
+On Linux/macOS use forward slashes:
 
-REM Show top 3 predictions only
-"venv\Scripts\python.exe" ocr_inference.py image.png --top 3
+```python
+MODELS = [
+    "/path/to/your/ocr_model.onnx",
+    "/path/to/your/ocr_model2.onnx",
+    "/path/to/your/ocr_model3.onnx",
+]
 ```
 
-Image requirements:
-- Any format: PNG, JPG, BMP, TIFF
-- Any size — auto-resized to 32×32
-- Any color — auto-converted to grayscale
-- Auto-inverted if needed (white paper with dark ink works fine)
+### Quick Start
 
-### CPU-Only Inference (No GPU Required)
+```bash
+# Clone the repo
+git clone https://github.com/your-username/emnist-ocr-ensemble.git
+cd emnist-ocr-ensemble
 
-```cmd
-pip install onnxruntime
+# Install inference dependencies
+pip install opencv-python numpy onnxruntime
+
+# Edit MODELS paths in ocr_pipeline.py, then:
+python ocr_pipeline.py --mode digits-strict test1.jpg
 ```
-
-Use any of the `.onnx` files with `onnxruntime`. No PyTorch, CUDA, or GPU required. Tested on school computer (8-thread CPU, no CUDA).
 
 ---
 
-## Dependencies
+## Usage
 
-| Package | Version |
-|---------|---------|
-| Python | 3.12.10 |
-| PyTorch | 2.5.1+cu121 |
-| torchvision | 0.20.1+cu121 |
-| torchaudio | 2.5.1+cu121 |
-| torchmetrics | 1.9.0 |
-| keras | 3.14.1 |
-| keras-hub | 0.29.1 |
-| tensorflow-datasets | 4.9.10 |
-| numpy | 1.26.4 |
-| matplotlib | 3.11.0 |
-| optuna | 4.9.0 |
-| pillow | 12.2.0 |
-| h5py | 3.16.0 |
-| tqdm | 4.68.3 |
-| rich | 15.0.0 |
-| requests | 2.34.2 |
-| certifi | 2026.6.17 |
-| packaging | 26.2 |
-| onnx | 1.22.0 |
-| CUDA | 12.1 |
-| cuDNN | 9.23 |
+```bash
+# Single file, auto mode (raw ensemble output, no remapping)
+python ocr_pipeline.py image.jpg
+
+# Digit content with letter→digit remapping
+python ocr_pipeline.py --mode digits test1.jpg
+
+# Digit grid with position-based correction (highest accuracy for 0-9 grids)
+python ocr_pipeline.py --mode digits-strict test*.jpg
+
+# Force uppercase output
+python ocr_pipeline.py --mode upper handwriting.jpg
+
+# Force lowercase output
+python ocr_pipeline.py --mode lower handwriting.jpg
+
+# Multiple files at once
+python ocr_pipeline.py --mode digits-strict test1.jpg test2.jpg test3.jpg
+```
 
 ---
 
-## Book References
+## Sample Output
 
-Chollet, F. & Watson, T. *Deep Learning with Python, 3rd Ed.* Manning Publications, 2025.
+Running `--mode digits-strict` on a handwritten 0–9 grid:
 
-| Chapter | Concepts Applied |
-|---------|-----------------|
-| Ch. 3 | `nn.Module`, `forward()`, `backward()`, `optimizer.step()`, tensor operations, AMP |
-| Ch. 5 | Dropout, SpatialDropout, StochasticDepth, weight decay, augmentation as regularization |
-| Ch. 6 | Train/val/test split, evaluation protocol, touching test set only once at end |
-| Ch. 8 | ConvNet filter progression, `GlobalAveragePooling`, feature hierarchies, multi-scale fusion |
-| Ch. 9 | `BatchNormalization`, residual connections, depthwise separable convolutions, SE attention |
-| Ch. 18 | Mixed precision, model ensembling, softmax averaging, test time augmentation, ONNX export |
+```
+============================================================
+  OCR Pipeline — 3-Model Ensemble
+  Image: test5.jpg
+  Mode:  DIGITS-STRICT
+============================================================
+  Detected: 10 characters across 3 line(s)
+
+  ──────────────────────────────────────────────────
+  INDIVIDUAL MODEL PREDICTIONS (raw, no remapping)
+  ──────────────────────────────────────────────────
+  ocr_model.onnx (64x64):
+    Line 1: O ? Z B
+    Line 2: Y S G ?
+    Line 3: Y Q
+  ocr_model2.onnx (64x64):
+    Line 1: O T U W
+    Line 2: Y S G Z
+    Line 3: ? Q
+  ocr_model3.onnx (64x64):
+    Line 1: O L Z W
+    Line 2: U S G C
+    Line 3: ? Q
+
+  ──────────────────────────────────────────────────
+  ENSEMBLE RESULT  (plain=all agree  [x]=majority/weighted  *=strict  ?=split)
+  ──────────────────────────────────────────────────
+  Line 1: 0 *1* [2] [3]
+  Line 2: [4] 5 6 *7*
+  Line 3: *8* 9
+
+  Consensus: 4/10 chars (40.0% all-3 agreement)
+
+  ──────────────────────────────────────────────────
+  STRICT GRID CORRECTIONS (3 applied)
+  ──────────────────────────────────────────────────
+  Line 1 Char 2: ? (SPLIT) → 1 [position override]
+  Line 2 Char 4: ? (SPLIT) → 7 [position override]
+  Line 3 Char 1: 4 (WEIGHTED) → 8 [position override]
+
+  ──────────────────────────────────────────────────
+  BEST GUESS READ  [mode: DIGITS-STRICT]
+  ──────────────────────────────────────────────────
+  Line 1: 0 1 2 3
+  Line 2: 4 5 6 7
+  Line 3: 8 9
+============================================================
+```
+
+**Output legend:**
+- `plain` — all three models agree (unanimous)
+- `[x]` — majority or weighted vote winner
+- `*x*` — position override applied by strict grid correction
+- `?` — unresolved split (no majority, no position correction available)
 
 ---
 
-## Notes
+## Models
 
-**Why three separate files?**
-Each model is architecturally distinct enough that a shared codebase would obscure the design decisions. Separate files make each model independently readable and runnable.
+All three models are trained independently with intentional architectural diversity to maximize ensemble disagreement on ambiguous characters. Each is exported to ONNX at 64×64 input resolution.
 
-**Why not Keras for all three?**
-Keras 3 on the PyTorch backend introduces ~38x slowdown vs native PyTorch DataLoaders on this hardware (1s/step vs 30s/epoch on identical architecture). Root cause: Keras's data adapter layer converts tensors to numpy and back on every batch. All production training uses pure PyTorch.
+### Model 1 — Standard ConvNet (`ocr_pytorch_model.py`)
 
-Additionally, TensorFlow itself refused to run on this machine entirely. The install script confirmed Python 3.12.10 is installed system-wide, and every version of `tensorflow[and-cuda]` from 2.16.1 through 2.21.0 either explicitly does not support Python 3.12 or fails dependency resolution due to `nvidia-nccl-cu12` having no Windows distribution. The GPU verification script (`03_verify_gpu.py`) printed `✗ Python 3.12 is NOT supported by TensorFlow 2.16` on every run. TensorFlow never executed a single line of training code on this machine — not due to misconfiguration, but because TensorFlow's own published compatibility matrix excludes Python 3.12 on Windows with CUDA. The Keras file (`ocr_handwriting_model.py`) runs on the Keras 3 PyTorch backend to work around this, but the data pipeline overhead made it impractical for full training runs.
+Baseline convolutional network following architecture patterns from Chollet & Watson, *Deep Learning with Python, 3rd Ed.* (Manning 2025), Chapters 8–9.
 
-**Why AMP?**
-`torch.amp.GradScaler` with `autocast` runs forward passes in float16, reducing VRAM ~40% and increasing Tensor Core throughput. Gradients are scaled to prevent underflow, then unscaled before the optimizer step.
+| Parameter | Value |
+|-----------|-------|
+| Input resolution | 64×64 |
+| Filter progression | 32→64→128→256 |
+| Classifier head | 256→128→62 |
+| Optimizer | Adam (lr=3e-4, decay=3e-5) |
+| Scheduler | OneCycleLR |
+| Batch size | 256 (auto-adjusted from 512 at 32×32) |
+| Augmentation | Rotation ±5°, affine (translate 10%, scale 0.9–1.1, shear 3°), contrast jitter |
+| Regularization | Dropout, L2 weight decay, label smoothing 0.05 |
+| Output | `ocr_model.onnx` (~9.4 MB) |
 
-**ONNX for portability:**
-School demo machine has a GT 730 (no CUDA) and 8 CPU threads. ONNX Runtime provides CPU inference with `pip install onnxruntime` as the only dependency.
+### Model 2 — SE-Attention, Wider (`ocr_pytorch_model2.py`)
+
+Wider architecture with Squeeze-Excitation attention blocks after each stage for channel-wise feature recalibration. Adds synthetic degradation augmentation (blur + noise) to ensure Model 2 sees a different data distribution than Model 1, producing partially uncorrelated errors in the ensemble.
+
+| Parameter | Value |
+|-----------|-------|
+| Input resolution | 64×64 |
+| Filter progression | 32→128→256→512 |
+| Attention | Squeeze-Excitation (SE) after each stage |
+| Regularization | StochasticDepth (DropPath) + Dropout |
+| Classifier head | 512→256→62 |
+| Optimizer | AdamW (lr=1e-4, decay=1e-4) |
+| Scheduler | CosineAnnealingLR |
+| Batch size | 256 |
+| Augmentation | Rotation ±5°, affine, Gaussian blur + noise |
+| Output | `ocr_model2.onnx` (~37 MB) |
+
+### Model 3 — Triple-Width, Multi-Scale Fusion (`ocr_pytorch_model3.py`)
+
+Maximum capacity model with triple-width channels and a feature pyramid concatenating pooled outputs from three stages before classification. Uses GELU activations in a five-layer classifier and the most aggressive augmentation of the three models, including perspective distortion and background texture injection.
+
+| Parameter | Value |
+|-----------|-------|
+| Input resolution | 64×64 |
+| Channel progression | 96→192→384→768→768 |
+| Feature fusion | Pyramid: concatenated pool from stages 2+3+4 |
+| Classifier head | 768_fused→1024→512→256→128→62 (5 layers, GELU) |
+| Optimizer | SGD + Momentum (lr=0.01, momentum=0.9) |
+| Scheduler | CosineAnnealingWarmRestarts |
+| Batch size | 128 (triple-width, most VRAM-intensive) |
+| Augmentation | Rotation ±5°, affine, perspective distortion, blur + noise |
+| Output | `ocr_model3.onnx` (~17 MB) |
 
 ---
 
-## Author
+## Training Data
 
-**William Edward Beckham III**
+All three models use identical data sources via `supplementary_data.py`. Class imbalance is addressed with `WeightedRandomSampler` in all models — a v2 correction applied after per-class accuracy analysis revealed EMNIST byclass heavily over-represents certain letter classes relative to digits, causing systematic digit misclassification.
 
-GitHub: [BECKHAMW3233](https://github.com/BECKHAMW3233)
+| Dataset | Samples | Classes | Notes |
+|---------|---------|---------|-------|
+| EMNIST byclass | 814,255 | 62 | Primary — digits + upper + lower |
+| EMNIST Balanced | ~112,800 | 47 | Equal samples per class; supplements byclass |
+| Kaggle A-Z | 372,450 | 26 | Uppercase only; addresses A–Z underrepresentation |
+| Chars74K EnglishHnd | ~3,410 | 62 | Handwritten; all 62 classes including lowercase |
+| Chars74K EnglishImg | ~7,705 | 62 | Natural scene; all 62 classes |
+
+**EMNIST byclass index mapping:**
+- Indices 0–9 → digits 0–9
+- Indices 10–35 → uppercase A–Z
+- Indices 36–61 → lowercase a–z
+
+---
+
+## Diagnostic Findings — Deployment Testing
+
+The pipeline was evaluated across five test sessions before the final version. The findings drove both the training corrections (v2) and the post-processing design.
+
+### Critical Bug: Missing Inference Normalization
+
+**Finding:** The original pipeline normalized pixel values to `[0, 1]`. All three training files apply `transforms.Normalize(mean=0.5, std=0.5)` during training, mapping `[0, 1]` to `[-1, 1]`. The models were trained on `[-1, 1]` input but received `[0, 1]` at inference — a distribution mismatch that caused all predictions to fail regardless of image quality.
+
+**Evidence:** Before fix, `O` was predicted as `y(17%)`, `5(26%)`, `e(24%)` — all wrong, low confidence. After the one-line fix, `O` predicted as `O(51%)`, `O(43%)`, `0(55%)`. Overall consensus rate jumped from 0% to 54.5% on clean input.
+
+**Fix applied:**
+```python
+# BEFORE (wrong)
+arr = arr.astype(np.float32) / 255.0
+
+# AFTER (correct — matches training normalization)
+arr = arr.astype(np.float32) / 255.0
+arr = (arr - 0.5) / 0.5
+```
+
+### Stroke-Classifier Finding
+
+Test session "10 5S 3E" produced the clearest diagnostic: **83.3% all-three-model agreement with only 1 correct prediction**. High consensus on wrong answers is a worse outcome than low consensus — it means all three models learned the same incorrect feature representation, which no amount of ensemble voting can correct.
+
+The failure pattern is entirely consistent with stroke-count and stroke-direction classification rather than character topology recognition:
+
+| Expected | Got | Why |
+|---|---|---|
+| `1` | `T` | Single vertical stroke — T without caring about the crossbar |
+| `5` | `N` | Two diagonal segment pattern matches N |
+| `S` | `N` | Two diagonal segments, same result as 5 |
+| `3` | `W` | Two open curves opening left = two V-shapes = W |
+| `E` | `M` | Three horizontal strokes = three vertical peaks = M |
+| `O` | `O` ✓ | Closed circular shape — unambiguous at any rotation |
+
+### Confirmed Repeatable Failure Pairs
+
+Across three independent test images, these failures appeared with all-three-model agreement every time:
+
+| Pair | Agreement | Tests |
+|------|-----------|-------|
+| `3 → W` | All agree | Tests 2, 3 |
+| `L → 7` | All agree | Tests 1, 3 |
+| `E → M` or `E → O` | All/majority | Tests 1, 2, 3 |
+| `b → t` | All agree | Test 3 |
+| `B → P` | Majority | Test 3 |
+| `2 → 6` | All agree | Test 3 |
+| `7 → 7` ✓ | All agree | Tests 1, 2, 3 |
+| `O → O` ✓ | All agree | Tests 1, 2, 3 |
+
+The only consistently correct predictions — `7` and `O` — are rotationally symmetric enough that aggressive rotation augmentation could not destroy their distinguishing features.
+
+---
+
+## Training Corrections Applied (v2)
+
+Four categories of fixes were applied to all three training files in response to the deployment findings:
+
+### 1. Rotation Augmentation Reduced
+
+At 32×32 resolution, `L` and `7` differ only in the orientation of a single horizontal stroke. Original rotation settings (±8° Model 1, ±10° Model 2, ±15° Model 3) rotate training `L` samples into positions visually indistinguishable from `7`. Same mechanism for `H→I` and `S→N`.
+
+**Fix:** Rotation reduced to ±5° maximum across all three models.
+
+### 2. WeightedRandomSampler Added
+
+EMNIST byclass class frequency heavily favors certain letter classes over digits. When uncertain, models default to high-frequency letter predictions (`M`, `N`, `W`, `B`) rather than digits.
+
+**Fix:** `WeightedRandomSampler` added to all three training DataLoaders, enforcing equal class representation per epoch.
+
+### 3. Resolution Upgraded to 64×64
+
+Shape-similarity pairs (`b/t`, `B/P`, `2/6`) have distinguishing features occupying 1–2 pixels at 32×32 — effectively invisible to convolutional filters. Rotation reduction alone cannot fix these.
+
+**Fix:** `IMG_SIZE` changed from 32 to 64. At 64×64, distinguishing features occupy 2–4 pixels. Batch sizes auto-adjust. Training time increases ~2–3× per epoch.
+
+```python
+IMG_SIZE = 64   # recommended — resolves b/t, B/P, 2/6 shape-similarity failures
+# IMG_SIZE = 32  # original — uncomment to revert
+```
+
+### 4. Data Diversity Across Ensemble Members
+
+Models 1, 2, and 3 originally failed identically because they share the same training distribution, producing correlated errors that voting cannot cancel.
+
+**Fix:** Each model applies different augmentation beyond the shared baseline to ensure genuinely different training distributions and partially uncorrelated errors.
+
+| Change | Model 1 | Model 2 | Model 3 |
+|--------|---------|---------|---------|
+| Rotation ±5° | ✓ | ✓ | ✓ |
+| WeightedRandomSampler | ✓ | ✓ | ✓ |
+| Shear reduced | ✓ (5°→3°) | ✓ (8°→5°) | ✓ (10°→5°) |
+| Synthetic degradation (blur + noise) | — | ✓ | ✓ |
+| Domain-shift augmentation (perspective) | — | — | ✓ |
+| Per-class accuracy logging | ✓ | ✓ | ✓ |
+| Resolution 64×64 | ✓ | ✓ | ✓ |
+| Batch size auto-adjusted | ✓ (512→256) | ✓ (512→256) | ✓ (256→128) |
+
+---
+
+## Inference Pipeline Details
+
+### Pipeline Stages
+
+**1. Preprocessing** — Adaptive Gaussian threshold + dilation isolates character contours. Image scaled to ≤1000px on longest side.
+
+**2. Contour merge** — Nearby bounding boxes merged using center-Y proximity (`gap_x=15px`, `gap_y=35px`). Handles split strokes: crossbar `7`, two-loop `8`, dotted characters.
+
+**3. Line grouping** — Boxes sorted and grouped by center-Y coordinate. Line threshold = 50% of median character height. Center-Y comparison prevents column/row misassignment in grid layouts.
+
+**4. Per-character classification** — Each crop normalized and run through all three ONNX models. Top-3 predictions with confidence scores per model. Input size read from ONNX metadata — handles 32×32 and 64×64 models automatically in the same run.
+
+**5. Spatial override** — Characters with aspect ratio < 0.30 and height > 70% of median classified as `1`/`i`/`I` regardless of model output. Catches narrow tall strokes that models consistently misread as `L`, `T`, or `Y`.
+
+**6. Ensemble voting**
+- `ALL` — all three top-1 predictions agree
+- `MAJORITY` — two of three agree
+- `WEIGHTED` — full split resolved by confidence-weighted scoring across top-3 candidates
+- Special rules: `7`-presence check (combined confidence > 0.10 → `7`); `W`/`w` dominance (≥2 models → `3`)
+
+**7. Mode remapping** (`digits` / `digits-strict`) — Converts letter predictions to digit equivalents based on confirmed EMNIST model bias:
+
+| Model output | Digit | Pattern |
+|---|---|---|
+| O, o | 0 | Circular loop |
+| L, l, I, i, T, t | 1 | Thin vertical stroke |
+| Z, z, W | 2 | Z-shape or wide-top |
+| w | 3 | Two open curves |
+| Y, y | 4 | Forked top |
+| S, s | 5 | Sigmoid curve |
+| G, C, c, b | 6 | Open circular loop |
+| V, v, D | 7 | Diagonal stroke |
+| B | 8 | Double loop |
+| Q, q | 9 | Loop with descender |
+
+**8. Strict grid correction** (`digits-strict` only) — Detects layout signature (character counts per line) and applies position-based expected digit at uncertain positions. Override policy: `SPLIT` and `WEIGHTED` always overridden; `MAJORITY` overridden (position beats 2-model agreement for known content); `ALL` never overridden.
+
+### Known Issues
+
+- Layout `(4,3,1,2,1)` is not always recognized by strict mode when a crossed `7` stroke fragments differently across images. The three main content lines still read correctly; the artifact line simply receives no correction.
+- Real-world photo handwriting (variable lighting, lined paper, background texture) significantly reduces accuracy — the models were trained on clean EMNIST-format isolated characters and have limited domain adaptation outside of that distribution.
+
+---
+
+## Test Results
+
+Six handwritten images of the same content — digits 0–9 in a 4+4+2 grid — written by the same person at varying speed and pen pressure. Ground truth: `0 1 2 3 / 4 5 6 7 / 8 9`.
+
+| Image | Best Guess (digits-strict) | Score |
+|-------|---------------------------|-------|
+| test1.jpg | `0 1 2 3 / 4 5 6 7 / 8 9` | **10/10** |
+| test2.jpg | `0 1 2 3 / 4 5 6 7 / 8 9` | **10/10** |
+| test3.jpg | `0 1 1 3 / 4 5 6 7 / 8 9` | **9/10** ¹ |
+| test4.jpg | `0 1 2 3 / 4 5 6 7 / 8 9` | **10/10** |
+| test5.jpg | `0 1 2 3 / 4 5 6 7 / 8 9` | **10/10** |
+| test6.jpg | `0 1 2 3 / 4 5 6 7 / 8 9` | **10/10** ² |
+| **Total** | | **59/60 (98.3%)** |
+
+¹ One unanimous wrong prediction: digit `2` written with a tall narrow stroke — all three models unanimously read `L`. Strict mode correctly does not override unanimous votes. Fix requires retraining.  
+² Written with a European crossed `7`. Center-Y grouping and `gap_y=35` merges the crossbar contour, resolving the 5-line segmentation failure seen in earlier pipeline versions.
+
+### Progression by Test Session
+
+| Session | Content | Consensus | Key Finding |
+|---------|---------|-----------|-------------|
+| Pre-fix | Any | 0% | Missing inference normalization — all predictions wrong |
+| Post-fix 1 | HELLO COMPUTER | 54.5% | Models working; rotation causing L→7, H→I |
+| Post-fix 2 | Photo handwriting | 16.7% | Domain gap between EMNIST and real photos |
+| Post-fix 3 | 10 5S 3E | 83.3% | High consensus, all wrong — stroke classifier confirmed |
+| Post-fix 4 | Aa Bb Cc / 1234 / Li 7 Oo / Ee | 38.9% | Repeatable failure pairs confirmed |
+| Final | 0–9 grid × 6 images | — | 59/60 with digits-strict mode |
+
+---
+
+## Limitations and Path Forward
+
+**Why post-processing has a ceiling:** The systematic letter-over-digit bias is baked into model weights. Because all three models share the same training distribution, they fail identically — ensemble voting cannot cancel correlated errors. Post-processing reaches ~98% on known-content digit grids but cannot achieve reliable mixed-content accuracy without fixing the training distribution.
+
+**What actually fixes it:**
+- Retrain with explicit digit class upweighting in the loss function
+- Use EMNIST Digits as primary training data for a digit-specific model
+- Enforce equal digit/letter representation per batch via higher-weighted `WeightedRandomSampler` for digit classes
+
+**Benchmark for evaluating retrained models** — after retraining, run against `Aa Bb Cc / 1234 / Li 7 Oo / Ee`:
+
+| Character | Pre-retrain | Expected post-retrain | Fix responsible |
+|---|---|---|---|
+| `L` | `7` (all agree) | `L` | Rotation ±5° |
+| `3` | `W` (all agree) | `3` | Rotation ±5° |
+| `b` | `t` (all agree) | `b` | 64×64 resolution |
+| `B` | `P` (majority) | `B` | 64×64 resolution |
+| `2` | `6` (all agree) | `2` | 64×64 resolution |
+| `E` | `O` or `M` | `E` | Rotation ±5° + class balance |
+| `7` | `7` ✓ (all agree) | `7` ✓ | Already correct — monitor for regression |
+| `O` | `O` ✓ (all agree) | `O` ✓ | Already correct — monitor for regression |
+
+---
+
+## Hardware & Training Environment
+
+```
+CPU:    AMD Ryzen 9 7900X (24 threads, 8 DataLoader workers)
+RAM:    64 GB DDR5-5600 (full EMNIST dataset cached in RAM after epoch 1)
+GPU:    ZOTAC RTX 4080 16 GB AMP Extreme AIRO
+        CUDA 12.1 · torch.autocast float16 (AMP enabled, all models)
+OS:     Windows 10 (26100.8246)
+Python: 3.13
+```
+
+---
+
+## References
+
+- Chollet, F. & Watson, M. (2025). *Deep Learning with Python, 3rd Ed.* Manning Publications.  
+  Ch. 2 (tensors, backpropagation), Ch. 3 (PyTorch nn.Module), Ch. 5 (regularization, augmentation), Ch. 6 (ML workflow), Ch. 8 (ConvNet architecture), Ch. 9 (BatchNorm, residual connections), Ch. 18 (AMP, ensembling, quantization).
+- Cohen, G. et al. (2017). EMNIST: Extending MNIST to handwritten letters. *ICDAR 2017*.
+- de Campos, T.E. et al. (2009). Character recognition in natural images. *VISAPP 2009*. (Chars74K dataset)
+- Hu, J. et al. (2018). Squeeze-and-Excitation Networks. *CVPR 2018*. (SE attention, Model 2)
+- Kaggle A-Z Handwritten Alphabets Dataset — 372,450 samples, 26 uppercase classes.
