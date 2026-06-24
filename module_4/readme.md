@@ -25,13 +25,15 @@ Module 4 covers the two core supervised learning task types — classification a
 
 ```
 module_4/
-├── README.md                              # This file
-└── Apply_Classification_&_Regression/
-    ├── README.md                          # Project documentation
-    ├── setup_environment.py               # Install dependencies
-    ├── california_housing_regression.py   # Training script
-    ├── validation_mae_curve.png           # K-fold MAE curve output
-    └── module4_assess_answers.md          # Assess submission
+├── README.md                                    # This file
+├── Apply_Classification_&_Regression/
+│   ├── README.md                                # Project documentation
+│   ├── setup_environment.py                     # Install dependencies
+│   ├── california_housing_regression.py         # Training script
+│   └── validation_mae_curve.png                 # K-fold MAE curve output
+└── Assess_Classification_&_Regression/
+    ├── module4_assess_answers.md                # Assess submission
+    └── validation_mae_curve.png                 # Training curve (attached)
 ```
 
 ---
