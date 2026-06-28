@@ -39,31 +39,37 @@ Each version represents a complete retrain from random initialization — no inh
 ## Repository Structure
 
 ```
+emnist-model/
 ├── ocr_pipeline.py              # 6-model inference pipeline (base + distilled) — school machine paths
-├── ocr_pipeline_base.py         # 3-model base pipeline only
-├── ocr_pipeline_distill.py      # 3-model distilled pipeline only
-├── home_test_full.py            # 6-model inference pipeline — home machine paths
-├── home_test1.py                # Home: base 3-model, multi-file, no post-processing
-├── home_test2.py                # Home: distilled 3-model, multi-file, no post-processing
-├── home_test3.py                # Home: 6-model, multi-file, no post-processing
+├── home_test_full.py            # 6-model inference pipeline — home machine paths, full post-processing
 ├── ocr_distillation.py          # Knowledge distillation — phases 1, 2, 3
 ├── ocr_pytorch_model.py         # Model 1 training (OCRConvNet — Lion)
 ├── ocr_pytorch_model2.py        # Model 2 training (OCRConvNetWide — SF-AdamW)
 ├── ocr_pytorch_model3.py        # Model 3 training (OCRConvNetTriple — SGD)
 ├── supplementary_data.py        # Shared 9-source dataset loader
 ├── download_datasets.py         # Automated dataset download script
+├── install_deps.py              # Dependency installer
 ├── 01_install_cuda.bat          # CUDA 12.1 + cuDNN setup (run first, as Admin)
 ├── 02_install_python_packages.bat  # Python venv + all dependencies
 ├── 03_verify_gpu.py             # GPU and dataset verification
 ├── pytorch/                     # Model 1 checkpoint + ONNX
 │   ├── best_model.pt
-│   └── ocr_model.onnx           (9.4 MB)
+│   ├── final_model.pt
+│   ├── ocr_model.onnx           (9.4 MB)
+│   ├── training_curves.png
+│   └── training_log.csv
 ├── pytorch2/                    # Model 2 checkpoint + ONNX
 │   ├── best_model2.pt
-│   └── ocr_model2.onnx          (37.1 MB)
+│   ├── final_model2.pt
+│   ├── ocr_model2.onnx          (37.1 MB)
+│   ├── training_curves2.png
+│   └── training_log2.csv
 ├── pytorch3/                    # Model 3 checkpoint + ONNX
 │   ├── best_model3.pt
-│   └── ocr_model3.onnx          (17.5 MB)
+│   ├── final_model3.pt
+│   ├── ocr_model3.onnx          (17.5 MB)
+│   ├── training_curves3.png
+│   └── training_log3.csv
 ├── pytorch_distill1/            # Model 1 distilled checkpoint + ONNX
 │   ├── best_distill1.pt
 │   ├── final_distill1.pt
@@ -76,7 +82,7 @@ Each version represents a complete retrain from random initialization — no inh
 │   ├── best_distill3.pt
 │   ├── final_distill3.pt
 │   └── ocr_model3_distill.onnx  (17.5 MB)
-├── soft_labels/                 # Phase 1 distillation outputs (~165 MB each)
+├── soft_labels/                 # Phase 1 distillation outputs — excluded from repo (~165 MB each)
 │   ├── soft_labels_m1.npy
 │   ├── soft_labels_m2.npy
 │   └── soft_labels_m3.npy
