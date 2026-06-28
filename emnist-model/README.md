@@ -142,7 +142,7 @@ Update the `MODELS` list in whichever pipeline file you are running to match you
 ```bash
 # Clone the repo
 git clone https://github.com/BECKHAMW3233/CSC-114.git
-cd CSC-114/project
+cd CSC-114/emnist-model
 
 # Install inference dependencies
 pip install opencv-python numpy onnxruntime-gpu==1.19.2
@@ -173,12 +173,6 @@ python ocr_pipeline.py --mode lower handwriting.jpg
 
 # Multiple files at once
 python ocr_pipeline.py --mode digits-strict test1.jpg test2.jpg test3.jpg
-
-# Base 3-model only
-python ocr_pipeline_base.py --mode digits-strict test1.jpg
-
-# Distilled 3-model only
-python ocr_pipeline_distill.py --mode digits-strict test1.jpg
 ```
 
 ---
@@ -474,15 +468,31 @@ Notable regression: class 50 (o) degraded post-distillation relative to base mod
 
 ## Pipeline Configurations
 
-Three pipeline files exist for ablation testing:
+Two pipeline files are included in the repository:
 
-| Pipeline | Models | Purpose |
-|----------|--------|---------|
-| `ocr_pipeline_base.py` | M1 + M2 + M3 | Base ensemble — comparison baseline |
-| `ocr_pipeline_distill.py` | M1d + M2d + M3d | Distilled ensemble — isolates distillation contribution |
-| `ocr_pipeline.py` | All 6 | Full ensemble — expected highest accuracy |
+| Pipeline | Models | Paths | Purpose |
+|----------|--------|-------|---------|
+| `ocr_pipeline.py` | All 6 | School machine (C:\Users\beckhamw3233\Downloads\) | Full ensemble — school testing and demonstration |
+| `home_test_full.py` | All 6 | Home machine (E:\CSC-114\emnist-model\) | Full ensemble — home testing with full post-processing |
 
-Comparing results across all three configurations provides a clean ablation: distilled-only vs base-only isolates distillation contribution; full 6-model vs distilled-only isolates whether base models add value once distillation is complete.
+Both files are functionally identical in pipeline logic. Path variables are at the top of each file and must be updated to match your system before running.
+
+**To run base models only, distilled models only, or all 6 — comment out what you don't want in the MODELS list at the top of the file:**
+
+```python
+MODELS = [
+    # Base models
+    r"...\pytorch\ocr_model.onnx",
+    r"...\pytorch2\ocr_model2.onnx",
+    r"...\pytorch3\ocr_model3.onnx",
+    # Distilled models — comment these out to run base only
+    r"...\pytorch_distill1\ocr_model1_distill.onnx",
+    r"...\pytorch_distill2\ocr_model2_distill.onnx",
+    r"...\pytorch_distill3\ocr_model3_distill.onnx",
+]
+```
+
+Comment out the base model lines to run distilled only, comment out the distilled lines to run base only, or leave all 6 uncommented for the full ensemble. The pipeline handles any number of models automatically — voting, weighted scoring, and strict grid correction all adapt to however many models are active.
 
 ### Pipeline Stages
 
@@ -757,8 +767,8 @@ The repository includes all artifacts needed for full reproduction:
 - Dataset download automation (download_datasets.py)
 - All training scripts with documented hyperparameters
 - All 6 trained ONNX models (base + distilled)
-- Phase 1 soft label files (~165 MB each x 3)
-- All pipeline files for all three configurations
+- Phase 1 soft label files (~165 MB each x 3) — excluded from repo due to size, available on request
+- Both pipeline files (school and home machine paths)
 
 To reproduce from scratch: run the setup scripts, run download_datasets.py, train the three base models sequentially, run distillation phases 1-3. To run inference only: configure ONNX paths in the relevant pipeline file and run directly — no training required.
 
