@@ -506,13 +506,21 @@ Comment out the base model lines to run distilled only, comment out the distille
 
 **5. Spatial override** — Characters with aspect ratio < 0.30 and height > 70% of median are candidates for 1/i/I override. In digits/digits-strict mode, returns `1`. In lower mode, returns `i`. In upper mode, returns `I`. In auto mode, checks combined `i`/`I` confidence across all 6 models — if score exceeds 0.15, returns `i`; otherwise returns `1` for uppercase candidates (L, I, T, Y) and passes through for others. Catches narrow tall strokes that models consistently misread as L, T, or Y while correctly identifying lowercase `i` in mixed content.
 
+> **Fix applied June 28, 2026:** Auto mode previously defaulted all narrow tall strokes to `1` regardless of mode, causing lowercase `i` in mixed content to read as `1`. Updated to check combined i/I confidence across all 6 models before defaulting. Threshold: combined score > 0.15 → `i`. This resolved the `i` failure on the Untitled.png benchmark (Li 7 Oo line), pushing benchmark score from 12/15 to 13/15.
+
 **6. Ensemble voting**
 - `ALL` — all active models agree unanimously
 - `MAJORITY` — more than half agree
 - `WEIGHTED` — full split resolved by confidence-weighted scoring across top-3 candidates
-- Special rules: 7-presence check (combined confidence > 0.10 -> 7); W/w dominance (>=2 models -> 3)
-- `q→a` remap — in auto mode, `q` winning via weighted scoring is remapped to `a` (M2 consistently misreads lowercase `a` as `q`; remap applied before returning WEIGHTED result)
+- Special rules: 7-presence check (combined confidence > 0.10 → 7); W/w dominance (≥2 models → 3)
+- `q→a` remap — in auto mode, `q` winning via weighted scoring is remapped to `a`
 - Split rescue — if agreement is SPLIT and one model's top-1 confidence exceeds 0.22 and is 1.2x higher than all other models' top-1 confidence, that label is returned as WEIGHTED instead of `?`
+
+> **Fix 1 applied June 28, 2026 — `q→a` remap:** M2 consistently misreads lowercase `a` as `q` with high confidence, producing a weighted win from a single model when M1/M3/distilled models all produce `?`. Before fix: `a` → `q` in auto mode. After fix: weighted `q` winner in auto mode remapped to `a` before returning. Resolved Aa Bb Cc benchmark line char 2.
+>
+> **Fix 2 applied June 28, 2026 — Split rescue:** When all 6 models disagree (SPLIT), the pipeline previously returned `?`. Lowercase `e` consistently splits — M1 reads `e(27%)` while M2/M3 read `R(20-22%)` with no plurality. One model's 27% confidence is the highest single signal but was being discarded. Fix: if best single-model top-1 confidence > 0.22 AND exceeds all other top-1 confidences by 1.2x, use that label as WEIGHTED. Resolved `e` split on Untitled.png benchmark, pushing score from 13/15 to 15/15.
+>
+> **Combined effect of all three fixes:** Untitled.png benchmark improved from 12/15 (80.0%) to 15/15 (100%) in auto mode. Fixes are targeted to specific observed failure modes and do not affect digits-strict or upper/lower mode behavior except where noted.
 
 **7. Mode remapping** (digits / digits-strict) — Converts letter predictions to digit equivalents based on confirmed EMNIST model bias:
 
@@ -757,6 +765,43 @@ School machine benchmark testing scheduled June 30, 2026. Results from class dem
 
 **100-epoch ceiling:** All distillation runs used a 50-epoch maximum due to time constraints. Val_acc trajectories suggest 100 epochs with the same patience settings would produce meaningful additional improvement, particularly for M1 and M3 which showed continued learning at epoch 47-50.
 
+### Stress Test Findings — June 28, 2026
+
+Extended stress testing was conducted on the school machine (CPU-only inference, `ocr_pipeline.py`) using handwritten test images photographed from paper. Each test targeted a specific known failure mode.
+
+**Single-digit stress tests (`--mode digits-strict`):**
+
+| Image | Content | Characters Detected | Correct | Accuracy | Primary Failure |
+|-------|---------|---------------------|---------|----------|-----------------|
+| test21.jpg | All 5s (~70 chars) | 71 | ~65 | ~91.5% | Cursive 5 top stroke reads as S/J; distilled models read 5 as N |
+| test22.jpg | All 8s (~70 chars) | 63 | ~57 | 90.5% | Open-top 8 reads as 9/Q; exaggerated lower loop reads as d |
+| test23.jpg | All 3s (~60 chars) | 41 | 40 | 97.6% | THREE_SIGNALS system working correctly; one wide 3 crossed W→2 aspect threshold |
+| test24.jpg | All 7s (~70 chars) | 57 | 52 | 91.2% | Hooked 7 with curved tail reads as 9; models confident and wrong |
+
+**Key finding — 3s significantly outperform other digits in isolated stress testing.** The THREE_SIGNALS voting rule (W/w/J/j → 3 in digits mode) provides effective compensation that the other digits lack equivalent post-processing for.
+
+**Key finding — 7s and 8s at ~91% represent a model-level ceiling at 64x64.** The 7→9 confusion on hooked 7 variants and 8→9/d confusion on style variants cannot be resolved by post-processing — the base models are producing confident wrong predictions. Higher resolution retraining is required.
+
+**Lowercase vowel stress test (`--mode lower`):**
+
+| Image | Content | Characters Detected | Correct | Accuracy | Primary Failure |
+|-------|---------|---------------------|---------|----------|-----------------|
+| test20.jpg | a e i o (6 rows × 4 = 24 chars) | 13 | 7 | 29.2% | See breakdown below |
+
+**Detailed failure analysis for test20.jpg:**
+
+- **Detection failure (11/24 chars missed):** The `i` strokes are too thin to clear the contour detection minimum height threshold — they are filtered as noise. When surrounding characters (a, e, o) are significantly larger, the adaptive height filter excludes the thinner `i` strokes entirely. This is a preprocessing issue, not a model issue.
+- **`a` → q/9/g:** All six models consistently misread lowercase `a` as `Q`, `q`, `9`, or `G`. The closed loop with descending tail maps to Q/q in the model's learned feature space. The `q→a` post-processing remap in auto mode does not apply in lower mode because the remap was designed for the specific weighted-voting scenario in auto, not for majority-voted Q predictions.
+- **`e` → c:** All models read lowercase `e` as `C` — the open curve without the internal horizontal stroke being reliably detected. In lower mode `C→c` via LOWER_REMAP, producing `c` instead of `e`.
+- **`o` → o:** The only consistently correct character — circular closed loop with no ambiguous features.
+- **`i` → i (when detected):** When the `i` is detected (lines 4 and 5 only), it reads correctly via the spatial override and split rescue logic.
+
+**Root cause:** The `a/e/i/o` cluster performs significantly worse when isolated together than when mixed with uppercase and digit context. The models appear to use implicit contextual cues from surrounding character types to disambiguate — when every character is from the same ambiguous cluster, there are no anchoring signals.
+
+**Post-processing fixes applied and their limits:** The `q→a` remap, split rescue (threshold 1.2x), and `i` detection in spatial override address the auto mode benchmark image (Untitled.png) successfully — achieving 15/15 on that test. However these fixes do not generalize to the stress test scenario where all characters are from the failure cluster simultaneously.
+
+**Path forward for all stress test failures:** Higher resolution retraining (128x128 minimum) is the correct fix. At 128x128 the distinguishing stroke features — a's descending tail vs q's descending tail, e's internal horizontal stroke, i's dot, 7's hook vs 9's closed loop — occupy 4-8 pixels instead of 2-4 pixels, making them reliably detectable by the convolutional filters. Post-processing has reached its compensation limit for these classes at 64x64.
+
 ---
 
 ## Reproducibility
@@ -800,6 +845,36 @@ All training conducted on consumer hardware with no cloud compute. A self-impose
 - Model 1 distilled: ~2.1 hours (47 epochs, ~161s/epoch)
 - Model 2 distilled: ~5.7 hours (50 epochs, ~400s/epoch)
 - Model 3 distilled: ~6.1 hours (50 epochs, ~430s/epoch)
+
+---
+
+## Planned Next Version — v4 Multi-Resolution Ensemble
+
+The stress test findings from June 28, 2026 establish that the current 64x64 resolution is insufficient for reliable recognition of the lowercase ambiguity cluster (a, e, i, o, s, c, u, l) and certain digit style variants (hooked 7→9, open-top 8→9/Q). Post-processing has reached its compensation limit at this resolution. v4 addresses this through a multi-resolution training strategy.
+
+### v4 Architecture
+
+**Training:** Each of the 3 base model architectures trained at 4 resolutions — 32x32, 64x64, 128x128, and 256x256 — producing 12 base model files total.
+
+**Distillation:** Each distilled model trained from soft labels generated by all 4 resolution variants of its corresponding base architecture, providing richer soft label distributions than single-resolution teachers.
+
+**Result:** 24 total ONNX models (12 base + 12 distilled) across 4 resolutions and 3 architectures.
+
+**Inference:** All 24 models vote on every character — each input is resized to the native resolution of each model before prediction. The voting system handles 24 inputs using the same weighted scoring logic.
+
+### Rationale
+
+The 32x32 models learn coarse global shape features — fast, confident on unambiguous characters, strong anchoring votes. The 256x256 models learn fine stroke endpoint features — decisive on the ambiguous cluster where distinguishing features (a's descending tail vs q's, e's internal stroke, i's dot, 7's hook vs 9's closed loop) occupy 4-8 pixels instead of sub-pixel widths. The full 24-model ensemble covers the complete feature spectrum simultaneously rather than compromising at a single resolution.
+
+### Compute Requirements
+
+v4 is not viable on consumer hardware within reasonable time constraints. Estimated training time on RTX 4080: 3-4 weeks continuous. Planned execution on institutional compute (FTCC GCB open lab, pending approval) or cloud GPU rental (H100 SXM at ~$2.69/hr, estimated $300-400 total for full run).
+
+### Expected Improvements
+
+- Lowercase ambiguity cluster (a, e, i, o, s, c, u, l) — primary target, requires stroke-endpoint resolution unavailable at 64x64
+- Digit style variants (hooked 7, open-top 8, wide 3) — secondary target, fine curve/closure detection
+- Overall benchmark accuracy above 95% on isolated single-class stress tests
 
 ---
 
