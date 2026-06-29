@@ -416,6 +416,42 @@ Three runs were required before the final v3 run. This history is documented as 
 - **Run 2:** FocalLoss gamma=2.0 — catastrophic class collapse. O->0.1%, S->0.7%. Test acc: 76.61%.
 - **Run 3 (v3, final):** 9 fixes applied simultaneously — CosineAnnealingWarmRestarts->CosineAnnealingLR, weight decay 3e-5->5e-4, label smoothing 0.08->0.05 (FocalLoss removed), sharpness_factor bug fixed (0->2.0), contrast 0.4->0.2, translate 0.12->0.08, SE reduction 32->16, drop_path 0.1->0.05, first classifier dropout 0.5->0.35. Test acc: 77.30%.
 
+### Total Parameter Count Across All 6 Models
+
+| Model | Parameters |
+|-------|-----------|
+| M1 (OCRConvNet) | 2.5M |
+| M2 (OCRConvNetWide) | 9.7M |
+| M3 (OCRConvNetTriple) | 4.6M |
+| M1 distilled | 2.5M |
+| M2 distilled | 9.7M |
+| M3 distilled | 4.6M |
+| **Total** | **33.6M** |
+
+**33.6M parameters execute simultaneously on every single character prediction.**
+
+### Why This Ensemble Is Not Comparable to a Single 33M Parameter Model
+
+This is an important distinction for anyone with ML experience — and worth explaining clearly for anyone without it.
+
+**In plain terms:** Imagine you need to identify a handwritten character and you have two choices. Option A: ask one very knowledgeable person who has studied 33 million examples. Option B: ask six people independently, each of whom studied the same examples but thought about them differently — different methods, different focus areas, different ways of approaching the problem — then take a vote. Option B doesn't just add up the six people's knowledge. It cancels out each person's individual blind spots. When one person is wrong, the other five are likely right for different reasons, and the vote corrects the error. Option A has no such correction mechanism — when that one person is wrong, there's nothing to catch it.
+
+That's the difference between a single 33M parameter model and this 6-model ensemble.
+
+**Technically:** A single 33M parameter model trained end-to-end learns one unified weight landscape — one set of features, one set of decision boundaries, optimized by one loss function through one optimizer. When it makes mistakes, those mistakes are correlated — the same types of characters fail for the same underlying reasons every time. No amount of size makes a single model immune to its own systematic blind spots.
+
+The 33.6M parameters here are distributed across 6 completely independent models that each learned through different paths:
+- Different architectures (narrow channels vs wide channels vs triple-width with feature pyramid)
+- Different optimizers (Lion vs Schedule-Free AdamW vs SGD) — each explores a different region of weight space
+- Different augmentation distributions — each model saw slightly different versions of the training data
+- Different distillation teachers — the distilled models absorbed knowledge from different teacher combinations
+
+The result is 6 models that make **partially uncorrelated errors**. M1's Lion-trained weights fail differently than M3's SGD-trained weights. M2's wide channel attention fails differently than M1's narrow baseline. When one model produces a wrong answer, the remaining five are statistically likely to produce the right one — and majority voting catches the error.
+
+**The numbers bear this out:** M1 alone: 81.15%. M2 alone: 83.85%. M3 alone: 77.30%. After distillation all three converge to 88.1-88.5%. The full 6-model ensemble on benchmark tests: 100% on structured digit grids, 100% on the mixed content benchmark. No individual model achieves 100% on those tests. The ensemble does because the errors don't overlap.
+
+A single 33M model with the same training data would likely achieve competitive accuracy on clean benchmarks — but its errors would be systematic and uncorrectable by any voting mechanism. The ensemble trades raw parameter count for error independence, and error independence is what produces the 100% benchmark result.
+
 ### Base Ensemble Results
 
 | Configuration | Accuracy |
