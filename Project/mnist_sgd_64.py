@@ -112,7 +112,6 @@ class _Tee:
 # =============================================================================
 
 NUM_CLASSES      = 10
-EPOCHS           = 75
 LEARNING_RATE    = 0.01
 WEIGHT_DECAY     = 5e-4
 MOMENTUM         = 0.9

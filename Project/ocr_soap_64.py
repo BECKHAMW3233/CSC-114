@@ -81,7 +81,6 @@ except ImportError:
 # ── Config ────────────────────────────────────────────────────────────────────
 IMG_SIZE      = 64
 NUM_CLASSES   = 10
-MAX_EPOCHS    = 50
 PATIENCE      = 20
 LR            = 1e-3
 BETAS         = (0.95, 0.95)
@@ -91,6 +90,12 @@ WARMUP_STEPS  = 500
 LABEL_SMOOTH  = 0.05
 DROP_PATH     = 0.05
 DROPOUT_HEAD  = 0.35
+WALL_CLOCK_LIMIT_S = 36000  # 10 hours — the actual stopping condition (patience or this, whichever first)
+SCHEDULE_EPOCH_ESTIMATE = 200  # used only to shape the cosine LR curve; NOT a hard epoch cap.
+                                # At ~174s/epoch (64x64 SOAP observed pace), 10h wall clock fits
+                                # ~206 epochs, so 200 keeps the cosine decay from bottoming out
+                                # early if the run goes long. Training itself is bounded by
+                                # PATIENCE and WALL_CLOCK_LIMIT_S only — see the main loop below.
 OUTPUT_DIR    = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pytorch_soap_64")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -133,8 +138,8 @@ class _Tee:
 
 # ── GPU monitoring ────────────────────────────────────────────────────────────
 def get_gpu_stats():
-    vram_alloc = torch.cuda.memory_allocated() / 1024**3
-    vram_res   = torch.cuda.memory_reserved()  / 1024**3
+    vram_alloc = torch.cuda.max_memory_allocated() / 1024**3
+    vram_res   = torch.cuda.max_memory_reserved()  / 1024**3
     try:
         result = subprocess.run(
             ["nvidia-smi", "--query-gpu=utilization.gpu,temperature.gpu",
@@ -296,6 +301,22 @@ class WarmupCosineScheduler:
     def get_lr(self):
         return [pg["lr"] for pg in self.optimizer.param_groups]
 
+    def state_dict(self):
+        return {
+            "step_count":   self.step_count,
+            "base_lrs":     self.base_lrs,
+            "warmup_steps": self.warmup_steps,
+            "total_steps":  self.total_steps,
+            "eta_min":      self.eta_min,
+        }
+
+    def load_state_dict(self, state):
+        self.step_count   = state["step_count"]
+        self.base_lrs     = state["base_lrs"]
+        self.warmup_steps = state["warmup_steps"]
+        self.total_steps  = state["total_steps"]
+        self.eta_min      = state["eta_min"]
+
 
 # ── Data loading ──────────────────────────────────────────────────────────────
 def build_transform(img_size, train=True):
@@ -397,7 +418,7 @@ def try_batch_size(img_size):
             if _free_vram < 1.5:
                 print(f'  Batch size {bs} — insufficient free VRAM ({_free_vram:.1f}GB free), skipping')
                 continue
-            model = OCRConvNetTriple(drop_path=DROP_PATH, dropout=DROPOUT_HEAD).to(DEVICE)
+            model = OCRConvNetTriple(num_classes=NUM_CLASSES, drop_path=DROP_PATH, dropout=DROPOUT_HEAD).to(DEVICE)
             dummy = torch.zeros(bs, 1, img_size, img_size, device=DEVICE)
             out   = model(dummy)
             loss  = out.sum()
@@ -512,9 +533,9 @@ if __name__ == "__main__":
     batch_size = try_batch_size(IMG_SIZE)
     train_dl, val_dl, test_dl = get_loaders(IMG_SIZE, batch_size)
 
-    total_steps = MAX_EPOCHS * len(train_dl)
+    total_steps = SCHEDULE_EPOCH_ESTIMATE * len(train_dl)
 
-    model     = OCRConvNetTriple(drop_path=DROP_PATH, dropout=DROPOUT_HEAD).to(DEVICE)
+    model     = OCRConvNetTriple(num_classes=NUM_CLASSES, drop_path=DROP_PATH, dropout=DROPOUT_HEAD).to(DEVICE)
     optimizer = SOAP(
         model.parameters(),
         lr=LR,
@@ -575,7 +596,9 @@ if __name__ == "__main__":
         print("[Resume] No prior checkpoint — starting fresh")
 
     wall_start = time.time()
-    for epoch in range(start_epoch, MAX_EPOCHS + 1):
+    epoch = start_epoch
+    while True:
+        torch.cuda.reset_peak_memory_stats()
         t0 = time.time()
         tr_loss, tr_acc = train_epoch(model, train_dl, optimizer, scheduler, criterion)
         va_loss, va_acc = eval_epoch(model, val_dl, criterion)
@@ -627,10 +650,12 @@ if __name__ == "__main__":
             print(f"  [Resume] Warning: could not save state: {_re}")
 
         wall_elapsed = time.time() - wall_start
-        if wall_elapsed >= 36000:
+        if wall_elapsed >= WALL_CLOCK_LIMIT_S:
             print(f"  [Wall clock] 10h limit reached after epoch {epoch} "
                   f"({wall_elapsed/3600:.2f}h) — stopping cleanly.")
             break
+
+        epoch += 1
 
     torch.save(model.state_dict(), final_path)
     model.load_state_dict(torch.load(best_path, map_location=DEVICE, weights_only=True))

@@ -129,7 +129,6 @@ class _Tee:
 # =============================================================================
 
 NUM_CLASSES      = 10
-EPOCHS           = 75
 # Schedule-Free AdamW uses similar LR range to standard AdamW
 LEARNING_RATE    = 1e-3
 WEIGHT_DECAY     = 1e-4

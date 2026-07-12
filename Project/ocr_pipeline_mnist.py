@@ -580,16 +580,34 @@ EXAMPLES:
     args = parser.parse_args()
 
     # Resolve model paths
+    # Directory names to never descend into when scanning --model-dir.
+    # Prevents sweeping up venv/site-packages test fixtures (onnx ships
+    # hundreds of tiny unit-test .onnx files, many literally named
+    # "model.onnx") and any unrelated model-zoo files that happen to live
+    # under the project root.
+    EXCLUDED_DIRS = {"venv", ".venv", "env", "site-packages", "__pycache__",
+                     ".git", "node_modules"}
     model_paths = []
     if args.model_dir:
         if not os.path.isdir(args.model_dir):
             print(f"  ERROR: --model-dir not found: {args.model_dir}")
             sys.exit(1)
+        skipped_dirs = []
         for root, dirs, files in os.walk(args.model_dir):
+            before = set(dirs)
+            dirs[:] = [d for d in dirs if d not in EXCLUDED_DIRS]
+            skipped = before - set(dirs)
+            if skipped:
+                skipped_dirs.extend(os.path.join(root, d) for d in skipped)
             dirs.sort()
             for fname in sorted(files):
                 if fname.lower().endswith(".onnx"):
                     model_paths.append(os.path.join(root, fname))
+        if skipped_dirs:
+            print(f"  Skipped {len(skipped_dirs)} excluded folder(s) "
+                  f"(venv/site-packages/etc.) during scan:")
+            for d in skipped_dirs:
+                print(f"    - {d}")
         if not model_paths:
             print(f"  ERROR: No .onnx files found in: {args.model_dir}")
             sys.exit(1)

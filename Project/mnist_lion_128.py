@@ -124,7 +124,6 @@ class _Tee:
 # =============================================================================
 
 NUM_CLASSES      = 10
-EPOCHS           = 75
 # Lion requires ~10x lower LR than Adam for equivalent update magnitude
 LEARNING_RATE    = 3e-5
 # Lion requires higher weight decay to compensate for sign-based uniform updates

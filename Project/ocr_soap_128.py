@@ -49,6 +49,7 @@ import time
 import datetime
 import subprocess
 import math
+import argparse
 
 import torch
 import torch.nn as nn
@@ -84,7 +85,6 @@ except ImportError:
 # ── Config ────────────────────────────────────────────────────────────────────
 IMG_SIZE      = 128
 NUM_CLASSES   = 10
-MAX_EPOCHS    = 50
 PATIENCE      = 20
 LR            = 1e-3
 BETAS         = (0.95, 0.95)
@@ -94,6 +94,10 @@ WARMUP_STEPS  = 500
 LABEL_SMOOTH  = 0.05
 DROP_PATH     = 0.05
 DROPOUT_HEAD  = 0.35
+WALL_CLOCK_LIMIT_S = 36000  # 10 hours — the actual stopping condition (patience or this, whichever first)
+SCHEDULE_EPOCH_ESTIMATE = 200  # used only to shape the cosine LR curve; NOT a hard epoch cap.
+                                # Training itself is bounded by PATIENCE and WALL_CLOCK_LIMIT_S
+                                # only — see the main loop below.
 OUTPUT_DIR    = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pytorch_soap_128")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -136,8 +140,8 @@ class _Tee:
 
 # ── GPU monitoring ────────────────────────────────────────────────────────────
 def get_gpu_stats():
-    vram_alloc = torch.cuda.memory_allocated() / 1024**3
-    vram_res   = torch.cuda.memory_reserved()  / 1024**3
+    vram_alloc = torch.cuda.max_memory_allocated() / 1024**3
+    vram_res   = torch.cuda.max_memory_reserved()  / 1024**3
     try:
         result = subprocess.run(
             ["nvidia-smi", "--query-gpu=utilization.gpu,temperature.gpu",
@@ -299,6 +303,22 @@ class WarmupCosineScheduler:
     def get_lr(self):
         return [pg["lr"] for pg in self.optimizer.param_groups]
 
+    def state_dict(self):
+        return {
+            "step_count":   self.step_count,
+            "base_lrs":     self.base_lrs,
+            "warmup_steps": self.warmup_steps,
+            "total_steps":  self.total_steps,
+            "eta_min":      self.eta_min,
+        }
+
+    def load_state_dict(self, state):
+        self.step_count   = state["step_count"]
+        self.base_lrs     = state["base_lrs"]
+        self.warmup_steps = state["warmup_steps"]
+        self.total_steps  = state["total_steps"]
+        self.eta_min      = state["eta_min"]
+
 
 # ── Data loading ──────────────────────────────────────────────────────────────
 def build_transform(img_size, train=True):
@@ -342,12 +362,41 @@ def get_loaders(img_size, batch_size):
                       download=False, transform=test_transform)
     val_ds   = Subset(val_base, val_idx.indices)
 
-    # MNIST: simple inverse-frequency weighting (already balanced, but keep sampler consistent)
-    combined = train_ds
-    targets = torch.tensor([int(train_full.targets[i]) for i in train_idx.indices], dtype=torch.long)
-    class_counts   = torch.bincount(targets, minlength=NUM_CLASSES).float().clamp(min=1)
-    class_weights  = 1.0 / class_counts
-    sample_weights = class_weights[targets]
+    if HAS_SUPPLEMENTARY:
+        supp_ds = load_supplementary(
+            transform=train_transform,
+            use_digits=True,
+            use_mnist=True,
+            use_usps=True,
+            use_svhn=True,
+            use_ardis=True,
+            use_balanced=False,
+            use_kaggle=False,
+            use_chars_hnd=False,
+            use_chars_img=False,
+            use_pghwld=False,
+            train=True,
+        )
+        if supp_ds is not None:
+            combined       = ConcatDataset([train_ds, supp_ds])
+            sample_weights = get_combined_weights(train_ds, supp_ds)
+            print(f"[Dataset] Combined: {len(combined):,} samples")
+        else:
+            combined = train_ds
+            targets        = torch.tensor(
+                [int(train_full.targets[i]) for i in train_idx.indices], dtype=torch.long
+            )
+            class_counts   = torch.bincount(targets, minlength=NUM_CLASSES).float().clamp(min=1)
+            class_weights  = 1.0 / class_counts
+            sample_weights = class_weights[targets]
+    else:
+        combined = train_ds
+        targets        = torch.tensor(
+            [int(train_full.targets[i]) for i in train_idx.indices], dtype=torch.long
+        )
+        class_counts   = torch.bincount(targets, minlength=NUM_CLASSES).float().clamp(min=1)
+        class_weights  = 1.0 / class_counts
+        sample_weights = class_weights[targets]
 
     sampler  = WeightedRandomSampler(sample_weights, len(sample_weights), replacement=True)
     train_dl = DataLoader(combined, batch_size=batch_size, sampler=sampler,
@@ -371,7 +420,7 @@ def try_batch_size(img_size):
             if _free_vram < 1.5:
                 print(f'  Batch size {bs} — insufficient free VRAM ({_free_vram:.1f}GB free), skipping')
                 continue
-            model = OCRConvNetTriple(drop_path=DROP_PATH, dropout=DROPOUT_HEAD).to(DEVICE)
+            model = OCRConvNetTriple(num_classes=NUM_CLASSES, drop_path=DROP_PATH, dropout=DROPOUT_HEAD).to(DEVICE)
             dummy = torch.zeros(bs, 1, img_size, img_size, device=DEVICE)
             out   = model(dummy)
             loss  = out.sum()
@@ -475,6 +524,11 @@ def plot_curves(log_path, out_path):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    _parser = argparse.ArgumentParser()
+    _parser.add_argument('--batch-size', type=int, default=None,
+                         help='Override auto batch detection with a fixed batch size')
+    _args = _parser.parse_args()
+
     tee = _Tee(OUTPUT_DIR)
 
     print("=" * 60)
@@ -483,12 +537,16 @@ if __name__ == "__main__":
     print(f"  Output : {OUTPUT_DIR}")
     print("=" * 60)
 
-    batch_size = try_batch_size(IMG_SIZE)
+    if _args.batch_size is not None:
+        batch_size = _args.batch_size
+        print(f"  Batch size {batch_size} — override (skipping auto-detect)")
+    else:
+        batch_size = try_batch_size(IMG_SIZE)
     train_dl, val_dl, test_dl = get_loaders(IMG_SIZE, batch_size)
 
-    total_steps = MAX_EPOCHS * len(train_dl)
+    total_steps = SCHEDULE_EPOCH_ESTIMATE * len(train_dl)
 
-    model     = OCRConvNetTriple(drop_path=DROP_PATH, dropout=DROPOUT_HEAD).to(DEVICE)
+    model     = OCRConvNetTriple(num_classes=NUM_CLASSES, drop_path=DROP_PATH, dropout=DROPOUT_HEAD).to(DEVICE)
     optimizer = SOAP(
         model.parameters(),
         lr=LR,
@@ -549,7 +607,9 @@ if __name__ == "__main__":
         print("[Resume] No prior checkpoint — starting fresh")
 
     wall_start = time.time()
-    for epoch in range(start_epoch, MAX_EPOCHS + 1):
+    epoch = start_epoch
+    while True:
+        torch.cuda.reset_peak_memory_stats()
         t0 = time.time()
         tr_loss, tr_acc = train_epoch(model, train_dl, optimizer, scheduler, criterion)
         va_loss, va_acc = eval_epoch(model, val_dl, criterion)
@@ -601,10 +661,12 @@ if __name__ == "__main__":
             print(f"  [Resume] Warning: could not save state: {_re}")
 
         wall_elapsed = time.time() - wall_start
-        if wall_elapsed >= 36000:
+        if wall_elapsed >= WALL_CLOCK_LIMIT_S:
             print(f"  [Wall clock] 10h limit reached after epoch {epoch} "
                   f"({wall_elapsed/3600:.2f}h) — stopping cleanly.")
             break
+
+        epoch += 1
 
     torch.save(model.state_dict(), final_path)
     model.load_state_dict(torch.load(best_path, map_location=DEVICE, weights_only=True))

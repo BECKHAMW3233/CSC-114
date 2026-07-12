@@ -112,14 +112,13 @@ class _Tee:
 # =============================================================================
 
 NUM_CLASSES      = 10
-EPOCHS           = 75
 LEARNING_RATE    = 0.01
 WEIGHT_DECAY     = 5e-4
 MOMENTUM         = 0.9
 VALIDATION_SPLIT = 0.15
 PATIENCE         = 20
 import platform
-NUM_WORKERS      = 4  # parallel prefetch for training throughput
+NUM_WORKERS      = 10  # parallel prefetch for training throughput
 USE_AMP          = True
 
 DATA_DIR         = Path(r"E:\CSC-114\emnist-model\datasets\pytorch")
