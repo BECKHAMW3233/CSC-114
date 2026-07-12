@@ -1,0 +1,161 @@
+  Log: e:\CSC-114\project\pytorch_soap_64\soap_64_20260709_003312.log
+============================================================
+  OCRConvNetTriple — SOAP — 64x64
+  Device : cuda
+  Output : e:\CSC-114\project\pytorch_soap_64
+============================================================
+  Batch size 512 — OK
+  [Supplementary] ARDIS IV:        7,600 samples (Swedish historical digits)
+  [Supplementary] EMNIST Digits:   240,000 samples
+  [Supplementary] MNIST:           60,000 samples
+  [Supplementary] USPS:            7,291 samples
+Using downloaded and verified file: E:\CSC-114\emnist-model\datasets\pytorch\train_32x32.mat
+  [Supplementary] SVHN:            73,257 samples
+  [Supplementary] Total supplementary samples: 388,148
+  [Weights] Combined: 439,148 samples
+  [Weights] Class weight range:  0.000019 — 0.000024
+  [Weights] Digit weight range:  0.000019 — 0.000024
+[Dataset] Combined: 439,148 samples
+  Parameters : 7,573,482
+  Batch size : 512
+  Total steps: 171,600
+  Warmup     : 500 steps
+  Precond Hz : every 100 steps
+
+[Resume] No prior checkpoint — starting fresh
+  Ep   1 | tr 0.7703 | val 0.9862 | lr 1.00e-03 | 172s | VRAM 9.5/12.9GB | CUDA 50% | 64°C | CPU 10.4% | RAM 15.69GB
+    ↑ New best: 0.9862
+  Ep   2 | tr 0.9732 | val 0.9922 | lr 1.00e-03 | 172s | VRAM 9.5/12.9GB | CUDA 60% | 62°C | CPU 10.3% | RAM 15.61GB
+    ↑ New best: 0.9922
+  Ep   3 | tr 0.9795 | val 0.9938 | lr 1.00e-03 | 173s | VRAM 9.5/12.9GB | CUDA 60% | 61°C | CPU 10.7% | RAM 15.74GB
+    ↑ New best: 0.9938
+  Ep   4 | tr 0.9828 | val 0.9948 | lr 9.99e-04 | 172s | VRAM 9.5/12.9GB | CUDA 57% | 62°C | CPU 10.4% | RAM 15.75GB
+    ↑ New best: 0.9948
+  Ep   5 | tr 0.9845 | val 0.9961 | lr 9.99e-04 | 172s | VRAM 9.5/12.9GB | CUDA 45% | 65°C | CPU 10.4% | RAM 15.79GB
+    ↑ New best: 0.9961
+  Ep   6 | tr 0.9860 | val 0.9973 | lr 9.98e-04 | 172s | VRAM 9.5/12.9GB | CUDA 57% | 61°C | CPU 10.2% | RAM 15.68GB
+    ↑ New best: 0.9973
+  Ep   7 | tr 0.9871 | val 0.9956 | lr 9.97e-04 | 172s | VRAM 9.5/12.9GB | CUDA 53% | 64°C | CPU 10.4% | RAM 15.78GB
+  Ep   8 | tr 0.9877 | val 0.9967 | lr 9.97e-04 | 172s | VRAM 9.5/12.9GB | CUDA 46% | 64°C | CPU 10.3% | RAM 15.85GB
+  Ep   9 | tr 0.9884 | val 0.9980 | lr 9.96e-04 | 172s | VRAM 9.5/12.9GB | CUDA 44% | 65°C | CPU 10.2% | RAM 15.73GB
+    ↑ New best: 0.9980
+  Ep  10 | tr 0.9891 | val 0.9969 | lr 9.95e-04 | 172s | VRAM 9.5/12.9GB | CUDA 44% | 65°C | CPU 10.6% | RAM 15.81GB
+  Ep  11 | tr 0.9896 | val 0.9979 | lr 9.93e-04 | 172s | VRAM 9.5/12.9GB | CUDA 56% | 64°C | CPU 10.4% | RAM 15.81GB
+  Ep  12 | tr 0.9901 | val 0.9970 | lr 9.92e-04 | 172s | VRAM 9.5/12.9GB | CUDA 57% | 64°C | CPU 10.3% | RAM 15.66GB
+  Ep  13 | tr 0.9905 | val 0.9972 | lr 9.90e-04 | 172s | VRAM 9.5/12.9GB | CUDA 59% | 65°C | CPU 10.1% | RAM 15.73GB
+  Ep  14 | tr 0.9907 | val 0.9977 | lr 9.89e-04 | 172s | VRAM 9.5/12.9GB | CUDA 54% | 62°C | CPU 10.4% | RAM 15.69GB
+  Ep  15 | tr 0.9910 | val 0.9981 | lr 9.87e-04 | 172s | VRAM 9.5/12.9GB | CUDA 56% | 65°C | CPU 10.3% | RAM 15.71GB
+    ↑ New best: 0.9981
+  Ep  16 | tr 0.9912 | val 0.9979 | lr 9.85e-04 | 178s | VRAM 9.5/12.9GB | CUDA 60% | 65°C | CPU 10.3% | RAM 15.71GB
+  Ep  17 | tr 0.9914 | val 0.9976 | lr 9.83e-04 | 170s | VRAM 9.5/12.9GB | CUDA 56% | 65°C | CPU 9.8% | RAM 15.73GB
+  Ep  18 | tr 0.9919 | val 0.9984 | lr 9.81e-04 | 166s | VRAM 9.5/12.9GB | CUDA 55% | 62°C | CPU 9.2% | RAM 15.71GB
+    ↑ New best: 0.9984
+  Ep  19 | tr 0.9922 | val 0.9986 | lr 9.79e-04 | 166s | VRAM 9.5/12.9GB | CUDA 46% | 65°C | CPU 9.7% | RAM 15.83GB
+    ↑ New best: 0.9986
+  Ep  20 | tr 0.9923 | val 0.9982 | lr 9.77e-04 | 166s | VRAM 9.5/12.9GB | CUDA 62% | 62°C | CPU 9.1% | RAM 15.77GB
+  Ep  21 | tr 0.9924 | val 0.9983 | lr 9.74e-04 | 166s | VRAM 9.5/12.9GB | CUDA 55% | 62°C | CPU 9.1% | RAM 15.8GB
+  Ep  22 | tr 0.9927 | val 0.9984 | lr 9.72e-04 | 166s | VRAM 9.5/12.9GB | CUDA 65% | 62°C | CPU 9.1% | RAM 15.8GB
+  Ep  23 | tr 0.9930 | val 0.9974 | lr 9.69e-04 | 166s | VRAM 9.5/12.9GB | CUDA 46% | 66°C | CPU 9.0% | RAM 15.8GB
+  Ep  24 | tr 0.9929 | val 0.9981 | lr 9.66e-04 | 166s | VRAM 9.5/12.9GB | CUDA 51% | 66°C | CPU 9.1% | RAM 15.8GB
+  Ep  25 | tr 0.9932 | val 0.9989 | lr 9.63e-04 | 166s | VRAM 9.5/12.9GB | CUDA 46% | 66°C | CPU 9.0% | RAM 15.76GB
+    ↑ New best: 0.9989
+  Ep  26 | tr 0.9932 | val 0.9987 | lr 9.60e-04 | 166s | VRAM 9.5/12.9GB | CUDA 65% | 63°C | CPU 8.9% | RAM 15.79GB
+  Ep  27 | tr 0.9935 | val 0.9978 | lr 9.57e-04 | 166s | VRAM 9.5/12.9GB | CUDA 57% | 62°C | CPU 9.0% | RAM 15.76GB
+  Ep  28 | tr 0.9933 | val 0.9984 | lr 9.54e-04 | 166s | VRAM 9.5/12.9GB | CUDA 42% | 64°C | CPU 9.3% | RAM 15.81GB
+  Ep  29 | tr 0.9936 | val 0.9982 | lr 9.51e-04 | 166s | VRAM 9.5/12.9GB | CUDA 42% | 64°C | CPU 9.2% | RAM 15.79GB
+  Ep  30 | tr 0.9939 | val 0.9984 | lr 9.47e-04 | 166s | VRAM 9.5/12.9GB | CUDA 56% | 65°C | CPU 9.1% | RAM 15.8GB
+  Ep  31 | tr 0.9939 | val 0.9987 | lr 9.44e-04 | 166s | VRAM 9.5/12.9GB | CUDA 46% | 66°C | CPU 9.1% | RAM 15.83GB
+  Ep  32 | tr 0.9939 | val 0.9983 | lr 9.40e-04 | 166s | VRAM 9.5/12.9GB | CUDA 54% | 66°C | CPU 9.0% | RAM 15.8GB
+  Ep  33 | tr 0.9940 | val 0.9990 | lr 9.36e-04 | 166s | VRAM 9.5/12.9GB | CUDA 42% | 64°C | CPU 9.1% | RAM 15.6GB
+    ↑ New best: 0.9990
+  Ep  34 | tr 0.9943 | val 0.9981 | lr 9.32e-04 | 166s | VRAM 9.5/12.9GB | CUDA 58% | 62°C | CPU 9.2% | RAM 15.67GB
+  Ep  35 | tr 0.9943 | val 0.9984 | lr 9.28e-04 | 166s | VRAM 9.5/12.9GB | CUDA 46% | 65°C | CPU 9.1% | RAM 15.62GB
+  Ep  36 | tr 0.9943 | val 0.9990 | lr 9.24e-04 | 166s | VRAM 9.5/12.9GB | CUDA 62% | 66°C | CPU 9.0% | RAM 15.62GB
+  Ep  37 | tr 0.9942 | val 0.9990 | lr 9.20e-04 | 166s | VRAM 9.5/12.9GB | CUDA 54% | 62°C | CPU 9.2% | RAM 15.63GB
+  Ep  38 | tr 0.9945 | val 0.9988 | lr 9.16e-04 | 166s | VRAM 9.5/12.9GB | CUDA 46% | 62°C | CPU 9.1% | RAM 15.62GB
+  Ep  39 | tr 0.9946 | val 0.9989 | lr 9.11e-04 | 166s | VRAM 9.5/12.9GB | CUDA 58% | 66°C | CPU 9.0% | RAM 15.56GB
+  Ep  40 | tr 0.9948 | val 0.9989 | lr 9.07e-04 | 166s | VRAM 9.5/12.9GB | CUDA 52% | 64°C | CPU 9.0% | RAM 15.57GB
+  Ep  41 | tr 0.9948 | val 0.9989 | lr 9.02e-04 | 166s | VRAM 9.5/12.9GB | CUDA 61% | 65°C | CPU 9.1% | RAM 15.57GB
+  Ep  42 | tr 0.9949 | val 0.9990 | lr 8.97e-04 | 166s | VRAM 9.5/12.9GB | CUDA 67% | 63°C | CPU 9.0% | RAM 15.54GB
+  Ep  43 | tr 0.9950 | val 0.9989 | lr 8.92e-04 | 166s | VRAM 9.5/12.9GB | CUDA 63% | 63°C | CPU 9.0% | RAM 15.54GB
+  Ep  44 | tr 0.9951 | val 0.9992 | lr 8.88e-04 | 166s | VRAM 9.5/12.9GB | CUDA 45% | 63°C | CPU 9.0% | RAM 15.57GB
+    ↑ New best: 0.9992
+  Ep  45 | tr 0.9951 | val 0.9988 | lr 8.83e-04 | 166s | VRAM 9.5/12.9GB | CUDA 61% | 62°C | CPU 9.0% | RAM 15.56GB
+  Ep  46 | tr 0.9953 | val 0.9989 | lr 8.77e-04 | 166s | VRAM 9.5/12.9GB | CUDA 62% | 63°C | CPU 9.0% | RAM 15.56GB
+  Ep  47 | tr 0.9953 | val 0.9990 | lr 8.72e-04 | 166s | VRAM 9.5/12.9GB | CUDA 75% | 65°C | CPU 9.1% | RAM 15.54GB
+  Ep  48 | tr 0.9953 | val 0.9990 | lr 8.67e-04 | 166s | VRAM 9.5/12.9GB | CUDA 43% | 66°C | CPU 9.1% | RAM 15.53GB
+  Ep  49 | tr 0.9953 | val 0.9994 | lr 8.61e-04 | 166s | VRAM 9.5/12.9GB | CUDA 46% | 65°C | CPU 9.0% | RAM 15.55GB
+    ↑ New best: 0.9994
+  Ep  50 | tr 0.9956 | val 0.9988 | lr 8.56e-04 | 166s | VRAM 9.5/12.9GB | CUDA 55% | 66°C | CPU 8.9% | RAM 15.57GB
+  Ep  51 | tr 0.9955 | val 0.9990 | lr 8.50e-04 | 166s | VRAM 9.5/12.9GB | CUDA 55% | 63°C | CPU 9.0% | RAM 15.53GB
+  Ep  52 | tr 0.9956 | val 0.9989 | lr 8.45e-04 | 166s | VRAM 9.5/12.9GB | CUDA 54% | 64°C | CPU 9.0% | RAM 15.54GB
+  Ep  53 | tr 0.9956 | val 0.9992 | lr 8.39e-04 | 166s | VRAM 9.5/12.9GB | CUDA 45% | 63°C | CPU 9.1% | RAM 15.55GB
+  Ep  54 | tr 0.9957 | val 0.9989 | lr 8.33e-04 | 166s | VRAM 9.5/12.9GB | CUDA 43% | 67°C | CPU 9.0% | RAM 15.54GB
+  Ep  55 | tr 0.9958 | val 0.9988 | lr 8.27e-04 | 166s | VRAM 9.5/12.9GB | CUDA 57% | 64°C | CPU 9.1% | RAM 15.53GB
+  Ep  56 | tr 0.9959 | val 0.9996 | lr 8.21e-04 | 166s | VRAM 9.5/12.9GB | CUDA 63% | 66°C | CPU 9.0% | RAM 15.57GB
+    ↑ New best: 0.9996
+  Ep  57 | tr 0.9958 | val 0.9992 | lr 8.15e-04 | 166s | VRAM 9.5/12.9GB | CUDA 50% | 64°C | CPU 9.0% | RAM 15.53GB
+  Ep  58 | tr 0.9960 | val 0.9992 | lr 8.09e-04 | 166s | VRAM 9.5/12.9GB | CUDA 46% | 65°C | CPU 9.2% | RAM 15.55GB
+  Ep  59 | tr 0.9960 | val 0.9994 | lr 8.03e-04 | 166s | VRAM 9.5/12.9GB | CUDA 69% | 64°C | CPU 9.1% | RAM 15.51GB
+  Ep  60 | tr 0.9960 | val 0.9992 | lr 7.96e-04 | 166s | VRAM 9.5/12.9GB | CUDA 66% | 62°C | CPU 9.0% | RAM 15.54GB
+  Ep  61 | tr 0.9961 | val 0.9996 | lr 7.90e-04 | 166s | VRAM 9.5/12.9GB | CUDA 42% | 65°C | CPU 9.0% | RAM 15.53GB
+  Ep  62 | tr 0.9962 | val 0.9992 | lr 7.84e-04 | 166s | VRAM 9.5/12.9GB | CUDA 59% | 64°C | CPU 9.1% | RAM 15.54GB
+  Ep  63 | tr 0.9963 | val 0.9988 | lr 7.77e-04 | 166s | VRAM 9.5/12.9GB | CUDA 57% | 63°C | CPU 9.1% | RAM 15.53GB
+  Ep  64 | tr 0.9962 | val 0.9994 | lr 7.71e-04 | 166s | VRAM 9.5/12.9GB | CUDA 66% | 63°C | CPU 9.0% | RAM 15.51GB
+  Ep  65 | tr 0.9963 | val 0.9990 | lr 7.64e-04 | 166s | VRAM 9.5/12.9GB | CUDA 51% | 64°C | CPU 9.0% | RAM 15.54GB
+  Ep  66 | tr 0.9964 | val 0.9994 | lr 7.57e-04 | 166s | VRAM 9.5/12.9GB | CUDA 65% | 62°C | CPU 9.0% | RAM 15.53GB
+  Ep  67 | tr 0.9963 | val 0.9994 | lr 7.50e-04 | 166s | VRAM 9.5/12.9GB | CUDA 61% | 62°C | CPU 9.0% | RAM 15.55GB
+  Ep  68 | tr 0.9965 | val 0.9990 | lr 7.44e-04 | 166s | VRAM 9.5/12.9GB | CUDA 65% | 61°C | CPU 9.0% | RAM 15.53GB
+  Ep  69 | tr 0.9965 | val 0.9991 | lr 7.37e-04 | 166s | VRAM 9.5/12.9GB | CUDA 66% | 62°C | CPU 9.0% | RAM 15.59GB
+  Ep  70 | tr 0.9966 | val 0.9989 | lr 7.30e-04 | 166s | VRAM 9.5/12.9GB | CUDA 53% | 61°C | CPU 9.0% | RAM 15.53GB
+  Ep  71 | tr 0.9965 | val 0.9994 | lr 7.23e-04 | 166s | VRAM 9.5/12.9GB | CUDA 50% | 64°C | CPU 9.0% | RAM 15.54GB
+  Ep  72 | tr 0.9967 | val 0.9992 | lr 7.16e-04 | 166s | VRAM 9.5/12.9GB | CUDA 65% | 61°C | CPU 9.1% | RAM 15.52GB
+  Ep  73 | tr 0.9964 | val 0.9994 | lr 7.08e-04 | 166s | VRAM 9.5/12.9GB | CUDA 57% | 65°C | CPU 9.0% | RAM 15.53GB
+  Ep  74 | tr 0.9969 | val 0.9996 | lr 7.01e-04 | 166s | VRAM 9.5/12.9GB | CUDA 68% | 62°C | CPU 9.1% | RAM 15.51GB
+  Ep  75 | tr 0.9968 | val 0.9997 | lr 6.94e-04 | 166s | VRAM 9.5/12.9GB | CUDA 64% | 62°C | CPU 9.1% | RAM 15.55GB
+    ↑ New best: 0.9997
+  Ep  76 | tr 0.9969 | val 0.9998 | lr 6.87e-04 | 166s | VRAM 9.5/12.9GB | CUDA 56% | 62°C | CPU 9.0% | RAM 15.53GB
+    ↑ New best: 0.9998
+  Ep  77 | tr 0.9969 | val 0.9997 | lr 6.79e-04 | 166s | VRAM 9.5/12.9GB | CUDA 61% | 62°C | CPU 8.9% | RAM 15.53GB
+  Ep  78 | tr 0.9969 | val 0.9997 | lr 6.72e-04 | 166s | VRAM 9.5/12.9GB | CUDA 63% | 66°C | CPU 9.0% | RAM 15.53GB
+  Ep  79 | tr 0.9971 | val 0.9994 | lr 6.65e-04 | 166s | VRAM 9.5/12.9GB | CUDA 67% | 63°C | CPU 9.2% | RAM 15.54GB
+  Ep  80 | tr 0.9970 | val 0.9998 | lr 6.57e-04 | 166s | VRAM 9.5/12.9GB | CUDA 42% | 66°C | CPU 9.2% | RAM 15.55GB
+  Ep  81 | tr 0.9971 | val 0.9993 | lr 6.50e-04 | 166s | VRAM 9.5/12.9GB | CUDA 46% | 63°C | CPU 9.0% | RAM 15.54GB
+  Ep  82 | tr 0.9972 | val 0.9998 | lr 6.42e-04 | 166s | VRAM 9.5/12.9GB | CUDA 43% | 63°C | CPU 9.1% | RAM 15.53GB
+  Ep  83 | tr 0.9971 | val 0.9996 | lr 6.35e-04 | 166s | VRAM 9.5/12.9GB | CUDA 66% | 62°C | CPU 8.9% | RAM 15.53GB
+  Ep  84 | tr 0.9971 | val 0.9993 | lr 6.27e-04 | 166s | VRAM 9.5/12.9GB | CUDA 59% | 64°C | CPU 8.9% | RAM 15.56GB
+  Ep  85 | tr 0.9972 | val 0.9994 | lr 6.19e-04 | 166s | VRAM 9.5/12.9GB | CUDA 46% | 67°C | CPU 9.2% | RAM 15.51GB
+  Ep  86 | tr 0.9972 | val 0.9996 | lr 6.12e-04 | 166s | VRAM 9.5/12.9GB | CUDA 58% | 64°C | CPU 9.0% | RAM 15.53GB
+  Ep  87 | tr 0.9972 | val 1.0000 | lr 6.04e-04 | 166s | VRAM 9.5/12.9GB | CUDA 49% | 62°C | CPU 8.9% | RAM 15.54GB
+    ↑ New best: 1.0000
+  Ep  88 | tr 0.9976 | val 0.9999 | lr 5.96e-04 | 166s | VRAM 9.5/12.9GB | CUDA 46% | 65°C | CPU 9.0% | RAM 15.59GB
+  Ep  89 | tr 0.9973 | val 0.9998 | lr 5.88e-04 | 166s | VRAM 9.5/12.9GB | CUDA 56% | 64°C | CPU 9.1% | RAM 15.53GB
+  Ep  90 | tr 0.9974 | val 0.9996 | lr 5.81e-04 | 166s | VRAM 9.5/12.9GB | CUDA 43% | 65°C | CPU 9.0% | RAM 15.54GB
+  Ep  91 | tr 0.9974 | val 0.9996 | lr 5.73e-04 | 166s | VRAM 9.5/12.9GB | CUDA 54% | 63°C | CPU 8.9% | RAM 15.56GB
+  Ep  92 | tr 0.9977 | val 0.9993 | lr 5.65e-04 | 166s | VRAM 9.5/12.9GB | CUDA 43% | 63°C | CPU 9.0% | RAM 15.56GB
+  Ep  93 | tr 0.9975 | val 0.9994 | lr 5.57e-04 | 166s | VRAM 9.5/12.9GB | CUDA 57% | 65°C | CPU 9.0% | RAM 15.53GB
+  Ep  94 | tr 0.9976 | val 1.0000 | lr 5.49e-04 | 166s | VRAM 9.5/12.9GB | CUDA 57% | 65°C | CPU 9.0% | RAM 15.54GB
+  Ep  95 | tr 0.9976 | val 0.9999 | lr 5.42e-04 | 166s | VRAM 9.5/12.9GB | CUDA 63% | 63°C | CPU 9.1% | RAM 15.53GB
+  Ep  96 | tr 0.9977 | val 0.9997 | lr 5.34e-04 | 166s | VRAM 9.5/12.9GB | CUDA 61% | 62°C | CPU 9.6% | RAM 15.69GB
+  Ep  97 | tr 0.9978 | val 1.0000 | lr 5.26e-04 | 166s | VRAM 9.5/12.9GB | CUDA 55% | 63°C | CPU 9.2% | RAM 15.58GB
+  Ep  98 | tr 0.9976 | val 0.9998 | lr 5.18e-04 | 166s | VRAM 9.5/12.9GB | CUDA 65% | 65°C | CPU 9.0% | RAM 15.54GB
+  Ep  99 | tr 0.9977 | val 0.9997 | lr 5.10e-04 | 166s | VRAM 9.5/12.9GB | CUDA 67% | 63°C | CPU 9.2% | RAM 15.55GB
+  Ep 100 | tr 0.9977 | val 0.9999 | lr 5.02e-04 | 166s | VRAM 9.5/12.9GB | CUDA 62% | 64°C | CPU 9.0% | RAM 15.56GB
+  Ep 101 | tr 0.9977 | val 0.9998 | lr 4.94e-04 | 166s | VRAM 9.5/12.9GB | CUDA 66% | 62°C | CPU 9.0% | RAM 15.56GB
+  Ep 102 | tr 0.9978 | val 0.9998 | lr 4.87e-04 | 166s | VRAM 9.5/12.9GB | CUDA 42% | 62°C | CPU 9.0% | RAM 15.54GB
+  Ep 103 | tr 0.9978 | val 0.9999 | lr 4.79e-04 | 166s | VRAM 9.5/12.9GB | CUDA 42% | 63°C | CPU 9.1% | RAM 15.56GB
+  Ep 104 | tr 0.9980 | val 1.0000 | lr 4.71e-04 | 166s | VRAM 9.5/12.9GB | CUDA 60% | 66°C | CPU 9.0% | RAM 15.56GB
+  Ep 105 | tr 0.9979 | val 0.9999 | lr 4.63e-04 | 166s | VRAM 9.5/12.9GB | CUDA 54% | 65°C | CPU 9.0% | RAM 15.59GB
+  Ep 106 | tr 0.9979 | val 0.9999 | lr 4.55e-04 | 166s | VRAM 9.5/12.9GB | CUDA 56% | 64°C | CPU 8.9% | RAM 15.55GB
+  Ep 107 | tr 0.9980 | val 1.0000 | lr 4.47e-04 | 166s | VRAM 9.5/12.9GB | CUDA 52% | 62°C | CPU 9.0% | RAM 15.58GB
+  Early stop at epoch 107 — patience 20 exhausted
+
+  Test accuracy (best checkpoint): 0.9965
+  [Resume] State cleared — training complete.
+  ONNX exported and validated: e:\CSC-114\project\pytorch_soap_64\soap_64.onnx
+
+  Best val accuracy  : 1.0000
+  Test accuracy      : 0.9965
+  Log                : e:\CSC-114\project\pytorch_soap_64\soap_64_training_log.csv
+  ONNX               : e:\CSC-114\project\pytorch_soap_64\soap_64.onnx
+============================================================

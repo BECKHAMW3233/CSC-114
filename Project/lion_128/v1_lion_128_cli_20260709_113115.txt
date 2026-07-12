@@ -1,0 +1,286 @@
+
+======================================================================
+[Session start] 2026-07-09T11:31:15
+======================================================================
+
+############################################################
+  MNIST Lion 128x128 — SINGLE RESOLUTION TRAINING
+  Resolutions queued: [128]
+  Each is a full independent retrain — no weight transfer
+############################################################
+
+[Device] NVIDIA GeForce RTX 4080  |  16.0 GB VRAM  |  CUDA 12.1  |  AMP: True
+[Batch] Override: using batch size 128 (skipping auto-detect)
+============================================================
+  MNIST OCR — Lion  [128x128]
+  PyTorch 2.5.1+cu121  |  AMP: True
+  Output: E:\CSC-114\project\lion_128
+  Resolution: 128x128  |  Batch: 128 (override)
+  Optimizer: Lion
+  Scheduler: CosineAnnealingLR (no restarts)
+  Normalization: [0,1]  (v4 fix — no mean/std shift)
+============================================================
+[Dataset] Loading MNIST...
+[Dataset] Train: 51,000  |  Val: 9,000  |  Test: 10,000
+[Dataset] Loading digit supplementary data...
+  [Supplementary] ARDIS IV:        7,600 samples (Swedish historical digits)
+  [Supplementary] EMNIST Digits:   240,000 samples
+  [Supplementary] MNIST:           60,000 samples
+  [Supplementary] USPS:            7,291 samples
+Using downloaded and verified file: E:\CSC-114\emnist-model\datasets\pytorch\train_32x32.mat
+  [Supplementary] SVHN:            73,257 samples
+  [Supplementary] Total supplementary samples: 388,148
+[Dataset] Combined training set: 439,148 samples
+[Dataset] Computing class weights for balanced sampling...
+[Dataset] Class weight range: 0.000019 — 0.000024
+
+[Model] OCRConvNet (Model 1) — 128x128
+  Parameters : 2,456,563
+  Est. size  : 9.4 MB (float32)
+[Optimizer] Lion  lr=3e-05  wd=0.01  betas=(0.9, 0.99)
+
+[Train] Starting 128x128 — no epoch cap | batch: 128 | wall limit: 10h | patience: 15
+[Resume] No prior checkpoint found — starting fresh
+[128x128] Epoch   1  loss: 0.9358  acc: 0.7614  |  val_loss: 0.3883  val_acc: 0.9754  |  lr: 3.00e-05  [351s]  |  VRAM 7.8/7.9GB  CUDA 87%  60°C  |  CPU 9.2%  RAM 16.7/63.2GB
+  [Checkpoint] val_loss → 0.3883  saved
+[128x128] Epoch   2  loss: 0.4722  acc: 0.9460  |  val_loss: 0.3565  val_acc: 0.9829  |  lr: 3.00e-05  [343s]  |  VRAM 7.8/7.9GB  CUDA 85%  66°C  |  CPU 8.7%  RAM 16.6/63.2GB
+  [Checkpoint] val_loss → 0.3565  saved
+[128x128] Epoch   3  loss: 0.4231  acc: 0.9620  |  val_loss: 0.3347  val_acc: 0.9881  |  lr: 3.00e-05  [338s]  |  VRAM 7.8/7.9GB  CUDA 77%  64°C  |  CPU 7.8%  RAM 16.6/63.2GB
+  [Checkpoint] val_loss → 0.3347  saved
+[128x128] Epoch   4  loss: 0.4008  acc: 0.9686  |  val_loss: 0.3294  val_acc: 0.9898  |  lr: 3.00e-05  [338s]  |  VRAM 7.8/7.9GB  CUDA 86%  67°C  |  CPU 7.5%  RAM 16.6/63.2GB
+  [Checkpoint] val_loss → 0.3294  saved
+[128x128] Epoch   5  loss: 0.3871  acc: 0.9726  |  val_loss: 0.3252  val_acc: 0.9892  |  lr: 3.00e-05  [338s]  |  VRAM 7.8/7.9GB  CUDA 76%  63°C  |  CPU 7.7%  RAM 16.6/63.2GB
+  [Checkpoint] val_loss → 0.3252  saved
+[128x128] Epoch   6  loss: 0.3777  acc: 0.9752  |  val_loss: 0.3250  val_acc: 0.9877  |  lr: 3.00e-05  [338s]  |  VRAM 7.8/7.9GB  CUDA 85%  64°C  |  CPU 7.3%  RAM 16.6/63.2GB
+  [Checkpoint] val_loss → 0.3250  saved
+[128x128] Epoch   7  loss: 0.3708  acc: 0.9772  |  val_loss: 0.3110  val_acc: 0.9930  |  lr: 3.00e-05  [338s]  |  VRAM 7.8/7.9GB  CUDA 71%  65°C  |  CPU 7.4%  RAM 16.6/63.2GB
+  [Checkpoint] val_loss → 0.3110  saved
+[128x128] Epoch   8  loss: 0.3643  acc: 0.9789  |  val_loss: 0.3110  val_acc: 0.9933  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 84%  65°C  |  CPU 7.5%  RAM 16.4/63.2GB
+  [Checkpoint] val_loss → 0.3110  saved
+[128x128] Epoch   9  loss: 0.3606  acc: 0.9798  |  val_loss: 0.3073  val_acc: 0.9938  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 75%  65°C  |  CPU 7.7%  RAM 16.3/63.2GB
+  [Checkpoint] val_loss → 0.3073  saved
+[128x128] Epoch  10  loss: 0.3557  acc: 0.9817  |  val_loss: 0.3034  val_acc: 0.9949  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 74%  66°C  |  CPU 7.5%  RAM 16.3/63.2GB
+  [Checkpoint] val_loss → 0.3034  saved
+[128x128] Epoch  11  loss: 0.3527  acc: 0.9821  |  val_loss: 0.3013  val_acc: 0.9957  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 72%  64°C  |  CPU 7.4%  RAM 16.4/63.2GB
+  [Checkpoint] val_loss → 0.3013  saved
+[128x128] Epoch  12  loss: 0.3502  acc: 0.9830  |  val_loss: 0.3030  val_acc: 0.9957  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 72%  67°C  |  CPU 7.4%  RAM 16.4/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  13  loss: 0.3477  acc: 0.9839  |  val_loss: 0.3064  val_acc: 0.9936  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 68%  66°C  |  CPU 7.4%  RAM 16.2/63.2GB
+  [EarlyStopping] 2/15
+[128x128] Epoch  14  loss: 0.3446  acc: 0.9846  |  val_loss: 0.3030  val_acc: 0.9951  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 68%  68°C  |  CPU 7.4%  RAM 16.2/63.2GB
+  [EarlyStopping] 3/15
+[128x128] Epoch  15  loss: 0.3438  acc: 0.9848  |  val_loss: 0.3026  val_acc: 0.9951  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 83%  66°C  |  CPU 7.4%  RAM 16.2/63.2GB
+  [EarlyStopping] 4/15
+[128x128] Epoch  16  loss: 0.3419  acc: 0.9854  |  val_loss: 0.2971  val_acc: 0.9971  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 87%  67°C  |  CPU 7.5%  RAM 16.3/63.2GB
+  [Checkpoint] val_loss → 0.2971  saved
+[128x128] Epoch  17  loss: 0.3403  acc: 0.9858  |  val_loss: 0.2972  val_acc: 0.9967  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 73%  66°C  |  CPU 7.4%  RAM 16.2/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  18  loss: 0.3393  acc: 0.9862  |  val_loss: 0.2980  val_acc: 0.9964  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 87%  66°C  |  CPU 7.4%  RAM 16.2/63.2GB
+  [EarlyStopping] 2/15
+[128x128] Epoch  19  loss: 0.3376  acc: 0.9869  |  val_loss: 0.2961  val_acc: 0.9970  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 82%  66°C  |  CPU 7.4%  RAM 16.2/63.2GB
+  [Checkpoint] val_loss → 0.2961  saved
+[128x128] Epoch  20  loss: 0.3366  acc: 0.9872  |  val_loss: 0.2987  val_acc: 0.9963  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 83%  66°C  |  CPU 7.3%  RAM 16.3/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  21  loss: 0.3348  acc: 0.9879  |  val_loss: 0.2998  val_acc: 0.9954  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 81%  67°C  |  CPU 7.3%  RAM 16.3/63.2GB
+  [EarlyStopping] 2/15
+[128x128] Epoch  22  loss: 0.3338  acc: 0.9880  |  val_loss: 0.2975  val_acc: 0.9967  |  lr: 3.00e-05  [338s]  |  VRAM 7.8/7.9GB  CUDA 77%  64°C  |  CPU 7.3%  RAM 16.3/63.2GB
+  [EarlyStopping] 3/15
+[128x128] Epoch  23  loss: 0.3329  acc: 0.9883  |  val_loss: 0.2961  val_acc: 0.9968  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 71%  68°C  |  CPU 7.4%  RAM 16.3/63.2GB
+  [Checkpoint] val_loss → 0.2961  saved
+[128x128] Epoch  24  loss: 0.3319  acc: 0.9887  |  val_loss: 0.2989  val_acc: 0.9959  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 75%  64°C  |  CPU 7.4%  RAM 16.3/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  25  loss: 0.3308  acc: 0.9888  |  val_loss: 0.2957  val_acc: 0.9969  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 75%  64°C  |  CPU 7.3%  RAM 16.2/63.2GB
+  [Checkpoint] val_loss → 0.2957  saved
+[128x128] Epoch  26  loss: 0.3304  acc: 0.9890  |  val_loss: 0.2949  val_acc: 0.9976  |  lr: 3.00e-05  [338s]  |  VRAM 7.8/7.9GB  CUDA 82%  66°C  |  CPU 7.6%  RAM 16.4/63.2GB
+  [Checkpoint] val_loss → 0.2949  saved
+[128x128] Epoch  27  loss: 0.3292  acc: 0.9894  |  val_loss: 0.2963  val_acc: 0.9971  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 72%  64°C  |  CPU 7.9%  RAM 16.4/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  28  loss: 0.3283  acc: 0.9896  |  val_loss: 0.2947  val_acc: 0.9973  |  lr: 3.00e-05  [336s]  |  VRAM 7.8/7.9GB  CUDA 83%  67°C  |  CPU 8.2%  RAM 16.5/63.2GB
+  [Checkpoint] val_loss → 0.2947  saved
+[128x128] Epoch  29  loss: 0.3273  acc: 0.9899  |  val_loss: 0.2943  val_acc: 0.9974  |  lr: 3.00e-05  [336s]  |  VRAM 7.8/7.9GB  CUDA 83%  66°C  |  CPU 7.5%  RAM 16.4/63.2GB
+  [Checkpoint] val_loss → 0.2943  saved
+[128x128] Epoch  30  loss: 0.3268  acc: 0.9903  |  val_loss: 0.2928  val_acc: 0.9976  |  lr: 3.00e-05  [336s]  |  VRAM 7.8/7.9GB  CUDA 76%  66°C  |  CPU 7.4%  RAM 16.4/63.2GB
+  [Checkpoint] val_loss → 0.2928  saved
+[128x128] Epoch  31  loss: 0.3267  acc: 0.9902  |  val_loss: 0.2910  val_acc: 0.9983  |  lr: 3.00e-05  [336s]  |  VRAM 7.8/7.9GB  CUDA 77%  66°C  |  CPU 7.5%  RAM 16.4/63.2GB
+  [Checkpoint] val_loss → 0.2910  saved
+[128x128] Epoch  32  loss: 0.3264  acc: 0.9902  |  val_loss: 0.2927  val_acc: 0.9978  |  lr: 3.00e-05  [340s]  |  VRAM 7.8/7.9GB  CUDA 68%  67°C  |  CPU 8.2%  RAM 16.5/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  33  loss: 0.3250  acc: 0.9907  |  val_loss: 0.2946  val_acc: 0.9974  |  lr: 3.00e-05  [343s]  |  VRAM 7.8/7.9GB  CUDA 69%  66°C  |  CPU 8.6%  RAM 16.6/63.2GB
+  [EarlyStopping] 2/15
+[128x128] Epoch  34  loss: 0.3247  acc: 0.9908  |  val_loss: 0.2924  val_acc: 0.9983  |  lr: 3.00e-05  [346s]  |  VRAM 7.8/7.9GB  CUDA 83%  63°C  |  CPU 9.8%  RAM 17.6/63.2GB
+  [EarlyStopping] 3/15
+[128x128] Epoch  35  loss: 0.3238  acc: 0.9911  |  val_loss: 0.2927  val_acc: 0.9978  |  lr: 3.00e-05  [348s]  |  VRAM 7.8/7.9GB  CUDA 82%  65°C  |  CPU 9.1%  RAM 17.3/63.2GB
+  [EarlyStopping] 4/15
+[128x128] Epoch  36  loss: 0.3233  acc: 0.9913  |  val_loss: 0.2906  val_acc: 0.9987  |  lr: 3.00e-05  [347s]  |  VRAM 7.8/7.9GB  CUDA 70%  66°C  |  CPU 9.8%  RAM 17.6/63.2GB
+  [Checkpoint] val_loss → 0.2906  saved
+[128x128] Epoch  37  loss: 0.3231  acc: 0.9912  |  val_loss: 0.2939  val_acc: 0.9976  |  lr: 3.00e-05  [349s]  |  VRAM 7.8/7.9GB  CUDA 65%  66°C  |  CPU 9.5%  RAM 17.5/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  38  loss: 0.3217  acc: 0.9917  |  val_loss: 0.2929  val_acc: 0.9982  |  lr: 3.00e-05  [345s]  |  VRAM 7.8/7.9GB  CUDA 67%  65°C  |  CPU 9.5%  RAM 17.5/63.2GB
+  [EarlyStopping] 2/15
+[128x128] Epoch  39  loss: 0.3224  acc: 0.9915  |  val_loss: 0.2957  val_acc: 0.9971  |  lr: 3.00e-05  [347s]  |  VRAM 7.8/7.9GB  CUDA 72%  67°C  |  CPU 9.4%  RAM 17.4/63.2GB
+  [EarlyStopping] 3/15
+[128x128] Epoch  40  loss: 0.3220  acc: 0.9915  |  val_loss: 0.2915  val_acc: 0.9984  |  lr: 3.00e-05  [344s]  |  VRAM 7.8/7.9GB  CUDA 77%  64°C  |  CPU 8.9%  RAM 17.4/63.2GB
+  [EarlyStopping] 4/15
+[128x128] Epoch  41  loss: 0.3210  acc: 0.9920  |  val_loss: 0.2907  val_acc: 0.9988  |  lr: 3.00e-05  [347s]  |  VRAM 7.8/7.9GB  CUDA 76%  65°C  |  CPU 9.2%  RAM 17.4/63.2GB
+  [EarlyStopping] 5/15
+[128x128] Epoch  42  loss: 0.3203  acc: 0.9922  |  val_loss: 0.2913  val_acc: 0.9990  |  lr: 3.00e-05  [340s]  |  VRAM 7.8/7.9GB  CUDA 65%  66°C  |  CPU 8.2%  RAM 17.3/63.2GB
+  [EarlyStopping] 6/15
+[128x128] Epoch  43  loss: 0.3201  acc: 0.9921  |  val_loss: 0.2895  val_acc: 0.9989  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 65%  65°C  |  CPU 8.3%  RAM 17.4/63.2GB
+  [Checkpoint] val_loss → 0.2895  saved
+[128x128] Epoch  44  loss: 0.3201  acc: 0.9923  |  val_loss: 0.2913  val_acc: 0.9982  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 74%  63°C  |  CPU 7.7%  RAM 17.4/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  45  loss: 0.3186  acc: 0.9926  |  val_loss: 0.2904  val_acc: 0.9990  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 65%  66°C  |  CPU 7.7%  RAM 17.4/63.2GB
+  [EarlyStopping] 2/15
+[128x128] Epoch  46  loss: 0.3188  acc: 0.9927  |  val_loss: 0.2902  val_acc: 0.9988  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 83%  65°C  |  CPU 7.6%  RAM 17.4/63.2GB
+  [EarlyStopping] 3/15
+[128x128] Epoch  47  loss: 0.3184  acc: 0.9926  |  val_loss: 0.2940  val_acc: 0.9980  |  lr: 3.00e-05  [337s]  |  VRAM 7.8/7.9GB  CUDA 87%  67°C  |  CPU 7.7%  RAM 17.4/63.2GB
+  [EarlyStopping] 4/15
+[128x128] Epoch  48  loss: 0.3184  acc: 0.9926  |  val_loss: 0.2886  val_acc: 0.9992  |  lr: 3.00e-05  [343s]  |  VRAM 7.8/7.9GB  CUDA 74%  65°C  |  CPU 8.5%  RAM 17.5/63.2GB
+  [Checkpoint] val_loss → 0.2886  saved
+[128x128] Epoch  49  loss: 0.3179  acc: 0.9929  |  val_loss: 0.2900  val_acc: 0.9989  |  lr: 3.00e-05  [346s]  |  VRAM 7.8/7.9GB  CUDA 71%  66°C  |  CPU 9.1%  RAM 17.5/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  50  loss: 0.3171  acc: 0.9930  |  val_loss: 0.2912  val_acc: 0.9983  |  lr: 3.00e-05  [346s]  |  VRAM 7.8/7.9GB  CUDA 71%  66°C  |  CPU 9.2%  RAM 17.5/63.2GB
+  [EarlyStopping] 2/15
+[128x128] Epoch  51  loss: 0.3174  acc: 0.9929  |  val_loss: 0.2914  val_acc: 0.9982  |  lr: 3.00e-05  [347s]  |  VRAM 7.8/7.9GB  CUDA 83%  63°C  |  CPU 9.3%  RAM 17.4/63.2GB
+  [EarlyStopping] 3/15
+[128x128] Epoch  52  loss: 0.3166  acc: 0.9933  |  val_loss: 0.2883  val_acc: 0.9996  |  lr: 3.00e-05  [352s]  |  VRAM 7.8/7.9GB  CUDA 69%  65°C  |  CPU 9.2%  RAM 17.6/63.2GB
+  [Checkpoint] val_loss → 0.2883  saved
+[128x128] Epoch  53  loss: 0.3163  acc: 0.9935  |  val_loss: 0.2885  val_acc: 0.9991  |  lr: 3.00e-05  [347s]  |  VRAM 7.8/7.9GB  CUDA 88%  67°C  |  CPU 8.8%  RAM 17.8/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  54  loss: 0.3162  acc: 0.9934  |  val_loss: 0.2877  val_acc: 0.9993  |  lr: 3.00e-05  [374s]  |  VRAM 7.8/7.9GB  CUDA 80%  62°C  |  CPU 9.2%  RAM 17.9/63.2GB
+  [Checkpoint] val_loss → 0.2877  saved
+[128x128] Epoch  55  loss: 0.3157  acc: 0.9935  |  val_loss: 0.2895  val_acc: 0.9993  |  lr: 3.00e-05  [364s]  |  VRAM 7.8/7.9GB  CUDA 76%  63°C  |  CPU 8.9%  RAM 17.9/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  56  loss: 0.3155  acc: 0.9936  |  val_loss: 0.2921  val_acc: 0.9978  |  lr: 3.00e-05  [365s]  |  VRAM 7.8/7.9GB  CUDA 86%  66°C  |  CPU 9.0%  RAM 18.0/63.2GB
+  [EarlyStopping] 2/15
+[128x128] Epoch  57  loss: 0.3152  acc: 0.9937  |  val_loss: 0.2877  val_acc: 0.9994  |  lr: 3.00e-05  [375s]  |  VRAM 7.8/7.9GB  CUDA 66%  65°C  |  CPU 9.3%  RAM 18.1/63.2GB
+  [EarlyStopping] 3/15
+[128x128] Epoch  58  loss: 0.3150  acc: 0.9938  |  val_loss: 0.2893  val_acc: 0.9989  |  lr: 3.00e-05  [383s]  |  VRAM 7.8/7.9GB  CUDA 67%  64°C  |  CPU 9.0%  RAM 18.1/63.2GB
+  [EarlyStopping] 4/15
+[128x128] Epoch  59  loss: 0.3147  acc: 0.9938  |  val_loss: 0.2902  val_acc: 0.9987  |  lr: 3.00e-05  [383s]  |  VRAM 7.8/7.9GB  CUDA 75%  65°C  |  CPU 9.2%  RAM 18.1/63.2GB
+  [EarlyStopping] 5/15
+[128x128] Epoch  60  loss: 0.3149  acc: 0.9937  |  val_loss: 0.2885  val_acc: 0.9993  |  lr: 3.00e-05  [383s]  |  VRAM 7.8/7.9GB  CUDA 82%  64°C  |  CPU 9.2%  RAM 18.2/63.2GB
+  [EarlyStopping] 6/15
+[128x128] Epoch  61  loss: 0.3141  acc: 0.9940  |  val_loss: 0.2887  val_acc: 0.9991  |  lr: 3.00e-05  [383s]  |  VRAM 7.8/7.9GB  CUDA 68%  65°C  |  CPU 9.0%  RAM 18.2/63.2GB
+  [EarlyStopping] 7/15
+[128x128] Epoch  62  loss: 0.3133  acc: 0.9943  |  val_loss: 0.2882  val_acc: 0.9996  |  lr: 3.00e-05  [383s]  |  VRAM 7.8/7.9GB  CUDA 67%  64°C  |  CPU 9.2%  RAM 18.0/63.2GB
+  [EarlyStopping] 8/15
+[128x128] Epoch  63  loss: 0.3136  acc: 0.9941  |  val_loss: 0.2877  val_acc: 0.9994  |  lr: 3.00e-05  [383s]  |  VRAM 7.8/7.9GB  CUDA 70%  65°C  |  CPU 9.0%  RAM 18.0/63.2GB
+  [EarlyStopping] 9/15
+[128x128] Epoch  64  loss: 0.3132  acc: 0.9943  |  val_loss: 0.2889  val_acc: 0.9988  |  lr: 3.00e-05  [383s]  |  VRAM 7.8/7.9GB  CUDA 76%  64°C  |  CPU 9.1%  RAM 18.0/63.2GB
+  [EarlyStopping] 10/15
+[128x128] Epoch  65  loss: 0.3133  acc: 0.9942  |  val_loss: 0.2873  val_acc: 0.9997  |  lr: 3.00e-05  [382s]  |  VRAM 7.8/7.9GB  CUDA 71%  64°C  |  CPU 9.1%  RAM 18.1/63.2GB
+  [Checkpoint] val_loss → 0.2873  saved
+[128x128] Epoch  66  loss: 0.3128  acc: 0.9944  |  val_loss: 0.2878  val_acc: 0.9993  |  lr: 3.00e-05  [350s]  |  VRAM 7.8/7.9GB  CUDA 64%  66°C  |  CPU 8.8%  RAM 17.6/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  67  loss: 0.3133  acc: 0.9942  |  val_loss: 0.2884  val_acc: 0.9993  |  lr: 3.00e-05  [349s]  |  VRAM 7.8/7.9GB  CUDA 82%  65°C  |  CPU 8.7%  RAM 17.6/63.2GB
+  [EarlyStopping] 2/15
+[128x128] Epoch  68  loss: 0.3126  acc: 0.9944  |  val_loss: 0.2880  val_acc: 0.9996  |  lr: 3.00e-05  [361s]  |  VRAM 7.8/7.9GB  CUDA 66%  64°C  |  CPU 8.9%  RAM 17.6/63.2GB
+  [EarlyStopping] 3/15
+[128x128] Epoch  69  loss: 0.3119  acc: 0.9946  |  val_loss: 0.2864  val_acc: 0.9997  |  lr: 3.00e-05  [366s]  |  VRAM 7.8/7.9GB  CUDA 80%  63°C  |  CPU 9.2%  RAM 17.9/63.2GB
+  [Checkpoint] val_loss → 0.2864  saved
+[128x128] Epoch  70  loss: 0.3120  acc: 0.9945  |  val_loss: 0.2869  val_acc: 0.9996  |  lr: 3.00e-05  [360s]  |  VRAM 7.8/7.9GB  CUDA 80%  64°C  |  CPU 9.2%  RAM 18.0/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  71  loss: 0.3120  acc: 0.9947  |  val_loss: 0.2863  val_acc: 0.9998  |  lr: 3.00e-05  [369s]  |  VRAM 7.8/7.9GB  CUDA 82%  66°C  |  CPU 9.1%  RAM 18.1/63.2GB
+  [Checkpoint] val_loss → 0.2863  saved
+[128x128] Epoch  72  loss: 0.3117  acc: 0.9947  |  val_loss: 0.2881  val_acc: 0.9994  |  lr: 3.00e-05  [368s]  |  VRAM 7.8/7.9GB  CUDA 83%  63°C  |  CPU 9.2%  RAM 18.1/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  73  loss: 0.3114  acc: 0.9948  |  val_loss: 0.2867  val_acc: 0.9997  |  lr: 3.00e-05  [368s]  |  VRAM 7.8/7.9GB  CUDA 80%  63°C  |  CPU 9.0%  RAM 18.2/63.2GB
+  [EarlyStopping] 2/15
+[128x128] Epoch  74  loss: 0.3113  acc: 0.9949  |  val_loss: 0.2887  val_acc: 0.9988  |  lr: 3.00e-05  [365s]  |  VRAM 7.8/7.9GB  CUDA 68%  66°C  |  CPU 9.1%  RAM 18.2/63.2GB
+  [EarlyStopping] 3/15
+[128x128] Epoch  75  loss: 0.3111  acc: 0.9949  |  val_loss: 0.2868  val_acc: 0.9996  |  lr: 3.00e-05  [363s]  |  VRAM 7.8/7.9GB  CUDA 75%  63°C  |  CPU 9.0%  RAM 18.3/63.2GB
+  [EarlyStopping] 4/15
+[128x128] Epoch  76  loss: 0.3109  acc: 0.9949  |  val_loss: 0.2874  val_acc: 0.9989  |  lr: 3.00e-05  [347s]  |  VRAM 7.8/7.9GB  CUDA 82%  68°C  |  CPU 8.7%  RAM 17.7/63.2GB
+  [EarlyStopping] 5/15
+[128x128] Epoch  77  loss: 0.3106  acc: 0.9950  |  val_loss: 0.2872  val_acc: 0.9997  |  lr: 3.00e-05  [360s]  |  VRAM 7.8/7.9GB  CUDA 83%  65°C  |  CPU 11.5%  RAM 19.7/63.2GB
+  [EarlyStopping] 6/15
+[128x128] Epoch  78  loss: 0.3107  acc: 0.9949  |  val_loss: 0.2878  val_acc: 0.9993  |  lr: 3.00e-05  [343s]  |  VRAM 7.8/7.9GB  CUDA 82%  66°C  |  CPU 9.6%  RAM 19.9/63.2GB
+  [EarlyStopping] 7/15
+[128x128] Epoch  79  loss: 0.3111  acc: 0.9948  |  val_loss: 0.2863  val_acc: 0.9997  |  lr: 3.00e-05  [343s]  |  VRAM 7.8/7.9GB  CUDA 72%  64°C  |  CPU 9.6%  RAM 20.0/63.2GB
+  [EarlyStopping] 8/15
+[128x128] Epoch  80  loss: 0.3104  acc: 0.9951  |  val_loss: 0.2865  val_acc: 0.9996  |  lr: 3.00e-05  [342s]  |  VRAM 7.8/7.9GB  CUDA 70%  66°C  |  CPU 9.2%  RAM 18.8/63.2GB
+  [EarlyStopping] 9/15
+[128x128] Epoch  81  loss: 0.3103  acc: 0.9951  |  val_loss: 0.2862  val_acc: 0.9997  |  lr: 3.00e-05  [343s]  |  VRAM 7.8/7.9GB  CUDA 84%  64°C  |  CPU 9.5%  RAM 18.9/63.2GB
+  [Checkpoint] val_loss → 0.2862  saved
+[128x128] Epoch  82  loss: 0.3095  acc: 0.9954  |  val_loss: 0.2885  val_acc: 0.9990  |  lr: 3.00e-05  [342s]  |  VRAM 7.8/7.9GB  CUDA 67%  66°C  |  CPU 9.4%  RAM 18.9/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  83  loss: 0.3094  acc: 0.9954  |  val_loss: 0.2862  val_acc: 0.9998  |  lr: 3.00e-05  [343s]  |  VRAM 7.8/7.9GB  CUDA 83%  66°C  |  CPU 9.5%  RAM 18.8/63.2GB
+  [Checkpoint] val_loss → 0.2862  saved
+[128x128] Epoch  84  loss: 0.3095  acc: 0.9953  |  val_loss: 0.2870  val_acc: 0.9994  |  lr: 3.00e-05  [343s]  |  VRAM 7.8/7.9GB  CUDA 65%  65°C  |  CPU 9.4%  RAM 18.4/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  85  loss: 0.3092  acc: 0.9955  |  val_loss: 0.2871  val_acc: 0.9994  |  lr: 3.00e-05  [342s]  |  VRAM 7.8/7.9GB  CUDA 82%  64°C  |  CPU 8.9%  RAM 18.0/63.2GB
+  [EarlyStopping] 2/15
+[128x128] Epoch  86  loss: 0.3090  acc: 0.9954  |  val_loss: 0.2880  val_acc: 0.9993  |  lr: 3.00e-05  [347s]  |  VRAM 7.8/7.9GB  CUDA 67%  65°C  |  CPU 9.3%  RAM 18.0/63.2GB
+  [EarlyStopping] 3/15
+[128x128] Epoch  87  loss: 0.3092  acc: 0.9953  |  val_loss: 0.2872  val_acc: 0.9997  |  lr: 3.00e-05  [343s]  |  VRAM 7.8/7.9GB  CUDA 81%  66°C  |  CPU 9.0%  RAM 18.3/63.2GB
+  [EarlyStopping] 4/15
+[128x128] Epoch  88  loss: 0.3091  acc: 0.9955  |  val_loss: 0.2865  val_acc: 0.9996  |  lr: 3.00e-05  [342s]  |  VRAM 7.8/7.9GB  CUDA 73%  63°C  |  CPU 9.0%  RAM 18.1/63.2GB
+  [EarlyStopping] 5/15
+[128x128] Epoch  89  loss: 0.3091  acc: 0.9954  |  val_loss: 0.2869  val_acc: 0.9996  |  lr: 3.00e-05  [340s]  |  VRAM 7.8/7.9GB  CUDA 82%  65°C  |  CPU 8.8%  RAM 17.8/63.2GB
+  [EarlyStopping] 6/15
+[128x128] Epoch  90  loss: 0.3085  acc: 0.9956  |  val_loss: 0.2855  val_acc: 0.9996  |  lr: 3.00e-05  [353s]  |  VRAM 7.8/7.9GB  CUDA 83%  63°C  |  CPU 12.3%  RAM 19.4/63.2GB
+  [Checkpoint] val_loss → 0.2855  saved
+[128x128] Epoch  91  loss: 0.3085  acc: 0.9956  |  val_loss: 0.2879  val_acc: 0.9991  |  lr: 3.00e-05  [357s]  |  VRAM 7.8/7.9GB  CUDA 76%  65°C  |  CPU 11.7%  RAM 19.2/63.2GB
+  [EarlyStopping] 1/15
+[128x128] Epoch  92  loss: 0.3081  acc: 0.9958  |  val_loss: 0.2865  val_acc: 0.9997  |  lr: 3.00e-05  [349s]  |  VRAM 7.8/7.9GB  CUDA 82%  66°C  |  CPU 9.6%  RAM 19.7/63.2GB
+  [EarlyStopping] 2/15
+[128x128] Epoch  93  loss: 0.3084  acc: 0.9955  |  val_loss: 0.2860  val_acc: 0.9997  |  lr: 3.00e-05  [351s]  |  VRAM 7.8/7.9GB  CUDA 72%  63°C  |  CPU 10.2%  RAM 19.9/63.2GB
+  [EarlyStopping] 3/15
+[128x128] Epoch  94  loss: 0.3084  acc: 0.9955  |  val_loss: 0.2871  val_acc: 0.9994  |  lr: 3.00e-05  [351s]  |  VRAM 7.8/7.9GB  CUDA 69%  65°C  |  CPU 13.4%  RAM 20.2/63.2GB
+  [EarlyStopping] 4/15
+[128x128] Epoch  95  loss: 0.3082  acc: 0.9957  |  val_loss: 0.2858  val_acc: 0.9998  |  lr: 3.00e-05  [354s]  |  VRAM 7.8/7.9GB  CUDA 67%  65°C  |  CPU 11.4%  RAM 20.4/63.2GB
+  [EarlyStopping] 5/15
+[128x128] Epoch  96  loss: 0.3078  acc: 0.9958  |  val_loss: 0.2856  val_acc: 0.9998  |  lr: 3.00e-05  [347s]  |  VRAM 7.8/7.9GB  CUDA 76%  63°C  |  CPU 10.3%  RAM 19.6/63.2GB
+  [EarlyStopping] 6/15
+[128x128] Epoch  97  loss: 0.3079  acc: 0.9956  |  val_loss: 0.2866  val_acc: 0.9993  |  lr: 3.00e-05  [347s]  |  VRAM 7.8/7.9GB  CUDA 73%  66°C  |  CPU 9.4%  RAM 18.8/63.2GB
+  [EarlyStopping] 7/15
+[128x128] Epoch  98  loss: 0.3078  acc: 0.9958  |  val_loss: 0.2865  val_acc: 0.9999  |  lr: 3.00e-05  [359s]  |  VRAM 7.8/7.9GB  CUDA 72%  66°C  |  CPU 10.9%  RAM 20.2/63.2GB
+  [EarlyStopping] 8/15
+[128x128] Epoch  99  loss: 0.3074  acc: 0.9958  |  val_loss: 0.2859  val_acc: 0.9999  |  lr: 3.00e-05  [349s]  |  VRAM 7.8/7.9GB  CUDA 81%  64°C  |  CPU 10.9%  RAM 19.9/63.2GB
+  [EarlyStopping] 9/15
+[128x128] Epoch 100  loss: 0.3074  acc: 0.9960  |  val_loss: 0.2864  val_acc: 0.9997  |  lr: 3.00e-05  [349s]  |  VRAM 7.8/7.9GB  CUDA 78%  65°C  |  CPU 10.7%  RAM 19.3/63.2GB
+  [EarlyStopping] 10/15
+[128x128] Epoch 101  loss: 0.3077  acc: 0.9957  |  val_loss: 0.2857  val_acc: 0.9998  |  lr: 3.00e-05  [344s]  |  VRAM 7.8/7.9GB  CUDA 67%  66°C  |  CPU 9.1%  RAM 19.5/63.2GB
+  [EarlyStopping] 11/15
+[128x128] Epoch 102  loss: 0.3070  acc: 0.9959  |  val_loss: 0.2875  val_acc: 0.9992  |  lr: 3.00e-05  [343s]  |  VRAM 7.8/7.9GB  CUDA 67%  67°C  |  CPU 9.2%  RAM 19.5/63.2GB
+  [EarlyStopping] 12/15
+[128x128] Epoch 103  loss: 0.3071  acc: 0.9960  |  val_loss: 0.2862  val_acc: 0.9998  |  lr: 3.00e-05  [343s]  |  VRAM 7.8/7.9GB  CUDA 76%  67°C  |  CPU 9.1%  RAM 19.4/63.2GB
+  [EarlyStopping] 13/15
+[128x128] Epoch 104  loss: 0.3069  acc: 0.9961  |  val_loss: 0.2871  val_acc: 0.9993  |  lr: 3.00e-05  [343s]  |  VRAM 7.8/7.9GB  CUDA 76%  66°C  |  CPU 9.3%  RAM 19.4/63.2GB
+  [EarlyStopping] 14/15
+  [Wall clock] 10-hour limit reached after epoch 104 (10.07h) — stopping cleanly.
+
+[Train] [128x128] Loading best checkpoint...
+
+[Eval] [128x128] Running per-class accuracy analysis on test set...
+
+  [Per-Class] 10 worst-performing classes:
+    '9' (class  9): 98.7%  (1009 samples)
+    '5' (class  5): 98.9%  (892 samples)
+    '6' (class  6): 99.2%  (958 samples)
+    '7' (class  7): 99.4%  (1028 samples)
+    '2' (class  2): 99.5%  (1032 samples)
+    '8' (class  8): 99.7%  (974 samples)
+    '0' (class  0): 99.7%  (980 samples)
+    '1' (class  1): 99.7%  (1135 samples)
+    '4' (class  4): 99.8%  (982 samples)
+    '3' (class  3): 99.8%  (1010 samples)
+
+========================================
+  [128x128] Test accuracy : 0.9945  (99.45%)
+  [128x128] Test loss     : 0.2986
+========================================
+[Plot] Saved to E:\CSC-114\project\lion_128\v1_lion_128_curves_128.png
+[Log] Saved to E:\CSC-114\project\lion_128\v1_lion_128_log_128.csv
+[Save] E:\CSC-114\project\lion_128\v1_lion_128_final_128.pt  (9.4 MB)
+[ONNX] Exported to E:\CSC-114\project\lion_128\v1_lion_128_128.onnx  (9.4 MB)
+[Quantize] int8 model saved to E:\CSC-114\project\lion_128\v1_lion_128_quantized_128.pt  (9.2 MB)
+  [Resume] State cleared — training complete.
+
+[Done] [128x128] All files saved to E:\CSC-114\project\lion_128
+
+############################################################
+  TRAINING COMPLETE — LION 128x128
+  128x128: 99.45% test accuracy
+############################################################
