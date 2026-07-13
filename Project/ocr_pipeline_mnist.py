@@ -22,6 +22,28 @@ Usage:
 
   --models and --model-dir are mutually exclusive — use one or the other.
 
+Output markers:
+  ??            A character position was detected but the ensemble could not
+                agree on a digit (models split with no majority/weighted
+                winner). Distinct from [NON-DIGIT?], which means every model's
+                top confidence was too low to trust any answer at all.
+  [NON-DIGIT?]  Best confidence across all models fell below NON_DIGIT_CONF_FLOOR
+                — likely not a digit at all, not just a hard-to-read one.
+
+Note: get_boxes() has no concept of a grid — it clusters detected contours into
+"lines" purely by proximity and vertical position, not fixed rows/columns. Real
+handwritten digits are rarely uniform: they vary in size, spacing, and vertical
+alignment even within the same line, and get_boxes() has no ground truth to
+compare against. A digit that fails the width filter (e.g. a stray connecting
+stroke fuses onto it, making its box wider than a normal character) is now
+recovered by a rescue pass if doing so fills an unusually large gap in its
+line — see get_boxes()'s own docstring for exactly what is and isn't covered.
+This does not catch every case: a digit rejected for height or aspect ratio,
+or one whose vertical center lands outside its line's clustering window, can
+still be silently absent from the output with no ?? or other marker, because
+no character-slot was ever created for it. ?? only covers characters that WERE
+detected and handed to the models but couldn't be agreed on afterward.
+
 Requires: pip install onnxruntime-gpu opencv-python numpy
 """
 
@@ -177,6 +199,68 @@ def merge_nearby_boxes(boxes, gap_x=15, gap_y=35):
 
 
 def get_boxes(image_path):
+    """Detect character bounding boxes and group them into lines.
+
+    Returns (gray_image, lines), where lines is a list of rows and each row
+    is a list of (x, y, w, h) boxes sorted left-to-right.
+
+    This is proximity-based clustering, not a fixed grid: each contour that
+    survives the height/width/aspect filter below becomes a candidate box,
+    and boxes are grouped into a "line" purely by how close their vertical
+    centers are to each other (line_thresh, computed from that line's own
+    box heights). There is no assumption that digits are evenly spaced,
+    uniformly sized, or aligned to rows/columns — real handwriting isn't.
+
+    Rescue pass: a contour that fails ONLY the width ceiling (correct height
+    and aspect ratio, just too wide — the usual cause is a stray connecting
+    stroke or underline fusing onto an otherwise normal digit) is not
+    discarded outright. Each line is checked for an unusually large gap
+    relative to its own typical spacing — between two existing characters,
+    or after the last one, or before the first one (a trailing/leading
+    dropped digit, like "1 8 4" missing a final "5", produces no gap
+    between existing boxes at all, so the last/first-box edges have to be
+    checked too, not just the gaps strictly between pairs). If an oversized
+    contour's position and height fit inside that gap, it's added back as a
+    real character instead of silently dropped. This does not touch
+    contours rejected for height, aspect ratio, or being more than 2x over
+    the width ceiling (those stay rejected — they're far more likely to be
+    scan noise or a genuine full-width artifact than a real digit).
+
+    On the underlying cause (a stray stroke fusing onto a digit's contour,
+    inflating its bounding box): this is a well-documented failure mode in
+    OCR preprocessing literature, usually called "underline/rule-line
+    removal." The standard published technique detects long thin strokes
+    with a wide horizontal morphological opening (cv2.getStructuringElement
+    with a kernel like (25, 1) applied via cv2.MORPH_OPEN) and erases them
+    before contour extraction, rather than rescuing an oversized box after
+    the fact. That approach was tested against this project's own images
+    and NOT adopted here: the stray stroke on a real "5" in this dataset was
+    only ~45px long (~8% of the working image width) — a kernel wide enough
+    to reliably reject full-width scan artifacts elsewhere in the same image
+    (which run ~560px, near the full width) was too wide to catch that short
+    a stroke, and a kernel narrow enough to catch it started eroding real
+    digit strokes elsewhere. The width-ceiling rescue approach implemented
+    below sidesteps that tuning problem entirely by working in box-space
+    after contour detection rather than pixel-space before it, at the cost
+    of only fixing width-based rejections specifically (see the remaining
+    failure modes below for what it still misses).
+
+    Remaining known failure modes (still neither raise an error nor flag
+    anything — the character in question is just absent from the returned
+    lines):
+      - A digit rejected for HEIGHT or ASPECT RATIO (not width) is never
+        reconsidered by the rescue pass above.
+      - A line with only one detected character has no internal gap to
+        measure, so the rescue pass has nothing to compare against and is
+        skipped for that line entirely.
+      - A digit whose vertical center falls outside the current line's
+        line_thresh window (e.g. it's written higher/lower than the rest of
+        that row) can still be split into its own line or merged into the
+        wrong one.
+    Callers should still not assume the number of boxes returned equals the
+    number of digits actually on the page — the rescue pass narrows one
+    specific gap, it doesn't close all of them.
+    """
     img = cv2.imread(image_path, cv2.IMREAD_COLOR)
     if img is None:
         raise ValueError(f"cv2.imread returned None: {image_path}")
@@ -195,13 +279,25 @@ def get_boxes(image_path):
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     boxes = []
+    wide_rejects = []  # contours rejected ONLY for exceeding the width ceiling —
+                        # these are the ones worth a second look, since a digit
+                        # with a stray connecting stroke (see rescue pass below)
+                        # is the most common real-world cause, not noise.
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
         aspect = w / h if h > 0 else 0
-        if (h_img*0.03 < h < h_img*0.35 and
-            w_img*0.01 < w < w_img*0.25 and
-            0.1 < aspect < 10.0):
+        h_ok = h_img*0.03 < h < h_img*0.35
+        aspect_ok = 0.1 < aspect < 10.0
+        w_ok = w_img*0.01 < w < w_img*0.25
+        if h_ok and w_ok and aspect_ok:
             boxes.append((x, y, w, h))
+        elif h_ok and aspect_ok and w >= w_img*0.25:
+            # Failed on width alone — height and aspect both look like a real
+            # character. Cap how far over the ceiling we'll ever consider
+            # (2x) so an actual full-width scan artifact (w ~= w_img) is
+            # never rescued, only a moderately oversized single digit.
+            if w < w_img*0.50:
+                wide_rejects.append((x, y, w, h))
 
     if not boxes:
         return gray, []
@@ -220,20 +316,89 @@ def get_boxes(image_path):
             lines.append(sorted(current_line, key=lambda b: b[0]))
             current_line = [box]
     lines.append(sorted(current_line, key=lambda b: b[0]))
+
+    # Rescue pass — a wide-reject contour whose position and height fit
+    # plausibly into a line (right after the last box, right before the
+    # first box, or in an unusually large gap between two boxes — relative
+    # to that line's OWN normal spacing) is a strong sign a character was
+    # dropped by the width filter above, not that the writer left a
+    # deliberate blank space (deliberate spaces are handled separately
+    # downstream, at print time, by comparing each gap against that
+    # character's own width — this is a coarser, earlier check that runs
+    # before any character has been classified).
+    if len(lines) > 0 and wide_rejects:
+        for line in lines:
+            avg_h = sum(b[3] for b in line) / len(line)
+            cy_ref = sum(b[1] + b[3] // 2 for b in line) / len(line)
+            # Typical spacing for this line: median gap between existing
+            # boxes if there are at least two, otherwise fall back to a
+            # spacing estimate based on character height (roughly how wide
+            # a MNIST-style digit tends to be relative to its own height).
+            if len(line) >= 2:
+                gaps = [line[i+1][0] - (line[i][0] + line[i][2]) for i in range(len(line) - 1)]
+                median_gap = sorted(gaps)[len(gaps) // 2]
+            else:
+                median_gap = avg_h * 0.3
+            gap_floor = max(median_gap * 3, avg_h * 0.8)
+
+            def _try_rescue(zone_left, zone_right):
+                for wr in wide_rejects:
+                    wx, wy, ww, wh = wr
+                    wcy = wy + wh // 2
+                    if (zone_left - 10 <= wx and wx + ww <= zone_right + 10
+                            and abs(wcy - cy_ref) < line_thresh
+                            and abs(wh - avg_h) < avg_h):
+                        return wr
+                return None
+
+            # Gaps strictly between two existing boxes.
+            if len(line) >= 2:
+                gaps = [line[i+1][0] - (line[i][0] + line[i][2]) for i in range(len(line) - 1)]
+                for i, gap in enumerate(gaps):
+                    if gap > gap_floor:
+                        found = _try_rescue(line[i][0] + line[i][2], line[i+1][0])
+                        if found:
+                            line.append(found)
+                            wide_rejects.remove(found)
+
+            # After the last box in the line — the case a purely
+            # between-boxes check can never catch (e.g. a dropped trailing
+            # character, as when a line ends "1 8 4" but should be "1 8 4 5").
+            last = max(line, key=lambda b: b[0])
+            found = _try_rescue(last[0] + last[2], last[0] + last[2] + gap_floor + avg_h)
+            if found:
+                line.append(found)
+                wide_rejects.remove(found)
+
+            # Before the first box in the line, symmetric with the above.
+            first = min(line, key=lambda b: b[0])
+            found = _try_rescue(max(0, first[0] - gap_floor - avg_h), first[0])
+            if found:
+                line.append(found)
+                wide_rejects.remove(found)
+        lines = [sorted(line, key=lambda b: b[0]) for line in lines]
     return gray, lines
 
 
 # ── Voting ────────────────────────────────────────────────────────────────────
 
 def vote_topn(all_top3, conf_threshold=0.20):
-    """Majority vote across models. Returns (label, agreement, top1_list)."""
+    """Majority vote across models for one already-detected character box.
+
+    Returns (label, agreement, top1_list).
+    label is a digit '0'-'9', or '??' if the models genuinely split with no
+    majority, no weighted winner, and no single dominant-confidence model —
+    i.e. this character WAS detected and classified by every model, but the
+    ensemble could not settle on one answer. agreement is 'ALL', 'MAJORITY',
+    'WEIGHTED', or 'SPLIT' (SPLIT always pairs with the '??' label).
+    """
     top1_labels = [t[0][0] for t in all_top3 if t[0][1] >= conf_threshold]
     if not top1_labels:
         top1_labels = [t[0][0] for t in all_top3]
 
     count = Counter(top1_labels)
     if not count:
-        return "?", "SPLIT", top1_labels
+        return "??", "SPLIT", top1_labels
 
     top_label, top_count = count.most_common(1)[0]
     n = len(all_top3)
@@ -262,7 +427,7 @@ def vote_topn(all_top3, conf_threshold=0.20):
         if not other_confs or best_conf > max(other_confs) * 1.2:
             return best_conf_label, "WEIGHTED", top1_labels
 
-    return "?", "SPLIT", top1_labels
+    return "??", "SPLIT", top1_labels
 
 
 # ── Path resolution ───────────────────────────────────────────────────────────
@@ -307,7 +472,10 @@ def run_pipeline(image_path, sessions, img_sizes, model_names, ground_truth=None
         return
 
     total_chars = sum(len(l) for l in lines)
-    print(f"  Detected: {total_chars} characters across {len(lines)} line(s)\n")
+    print(f"  Detected: {total_chars} characters across {len(lines)} line(s)")
+    print(f"  (Detection is proximity-based, not a grid — an unusually large,")
+    print(f"   small, or disconnected digit may not produce a box at all and")
+    print(f"   would be missing from this count without any warning.)\n")
 
     if not lines:
         print("  No characters detected.\n")
@@ -377,13 +545,15 @@ def run_pipeline(image_path, sessions, img_sizes, model_names, ground_truth=None
     # Result
     print(f"  {'─'*50}")
     if n_models > 1:
-        print(f"  ENSEMBLE RESULT  (plain=all agree  [x]=majority/weighted  ?=split)")
+        print(f"  ENSEMBLE RESULT  (plain=all agree  [x]=majority/weighted  "
+              f"??=models split, no answer  [NON-DIGIT?]=likely not a digit)")
     else:
         print(f"  RESULT")
     print(f"  {'─'*50}")
 
     agree_count = 0
     total_count = 0
+    unknown_count = 0
     for ln, line in enumerate(ensemble_lines, 1):
         text = ""
         for entry in line:
@@ -394,18 +564,62 @@ def run_pipeline(image_path, sessions, img_sizes, model_names, ground_truth=None
             total_count += 1
             if agreement == "NON-DIGIT":
                 text += "[NON-DIGIT?]"
+                unknown_count += 1
             elif agreement in ("ALL", "SINGLE"):
                 text += label
                 agree_count += 1
             elif agreement in ("MAJORITY", "WEIGHTED"):
                 text += f"[{label}]"
             else:
-                text += "?"
+                text += "??"
+                unknown_count += 1
         print(f"  Line {ln}: {text}")
 
     if n_models > 1:
         pct = 100 * agree_count / total_count if total_count else 0
         print(f"\n  Consensus: {agree_count}/{total_count} chars ({pct:.1f}% full agreement)")
+    if unknown_count:
+        print(f"  Unidentified: {unknown_count} character(s) marked ?? or [NON-DIGIT?] above "
+              f"— see CHARACTER DETAIL below for per-model votes on each.")
+
+    # Page layout — same characters as ENSEMBLE RESULT above, but positioned
+    # left-to-right and top-to-bottom to roughly match their actual placement
+    # on the page, instead of every line being flush-left with even spacing.
+    img_h, img_w = gray.shape[:2]
+    layout_width = 60  # character columns to map the page width onto
+    print(f"\n  {'─'*50}")
+    print(f"  PAGE LAYOUT  (approximate — horizontal position and line spacing")
+    print(f"  scaled from the image; not a precise ruler)")
+    print(f"  {'─'*50}")
+
+    prev_line_bottom = None
+    for line_boxes, ens_line in zip(lines, ensemble_lines):
+        # Blank line(s) when the gap above this line is unusually large —
+        # mirrors a paragraph break / skipped row on the physical page.
+        line_top = min(b[1] for b in line_boxes)
+        if prev_line_bottom is not None:
+            gap = line_top - prev_line_bottom
+            avg_h = sum(b[3] for b in line_boxes) / len(line_boxes)
+            if gap > avg_h * 1.5:
+                print()
+        prev_line_bottom = max(b[1] + b[3] for b in line_boxes)
+
+        # Build the visible characters for this line (skip the synthetic
+        # space entries already inserted for in-line gaps — those are about
+        # spacing within a line, not the line's position on the page).
+        chars = [(e[0], e[1]) for e in ens_line if e[0] != " "]
+        left_x = min(b[0] for b in line_boxes)
+        indent = int((left_x / img_w) * layout_width)
+
+        rendered = ""
+        for label, agreement in chars:
+            if agreement == "NON-DIGIT":
+                rendered += "[NON-DIGIT?]"
+            elif agreement in ("MAJORITY", "WEIGHTED"):
+                rendered += f"[{label}]"
+            else:
+                rendered += label
+        print(f"  {' ' * indent}{rendered}")
 
     # Character detail — full top-3 per model per character
     print(f"\n  {'─'*50}")
@@ -432,7 +646,7 @@ def run_pipeline(image_path, sessions, img_sizes, model_names, ground_truth=None
 
             aspect = w / h if h > 0 else 0
             nd_warn = "  *** LIKELY NON-DIGIT — check image ***" if agreement == "NON-DIGIT" else ""
-            print(f"\n    Char {box_idx+1:>2}  [w:{w} h:{h} asp:{aspect:.2f}]  vote={flag}  final={final_label}{nd_warn}")
+            print(f"\n    Char {box_idx+1:>2}  [x:{x} y:{y} w:{w} h:{h} asp:{aspect:.2f}]  vote={flag}  final={final_label}{nd_warn}")
             for mi, (mname, top3) in enumerate(zip(model_names, all_top3)):
                 top1_lbl, top1_conf = top3[0]
                 top2_lbl, top2_conf = top3[1] if len(top3) > 1 else ("?", 0.0)
