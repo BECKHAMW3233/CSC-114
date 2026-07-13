@@ -51,388 +51,6 @@ reference for all MNIST ensemble comparative analysis.
 
 ---
 
-## Hardware Target
-
-| Component | Spec |
-|---|---|
-| CPU | AMD Ryzen 9 7900X — 12 cores / 24 threads, Zen 4, base 4.7GHz (confirmed 4701MHz), boost up to 5.6GHz, 64MB L3 cache, 170W TDP |
-| Motherboard | ASUS ROG Crosshair X670E Hero (Rev 1.xx) — AMD X670E chipset, Socket AM5, 18+2 phase power delivery, PCIe 5.0, BIOS 3003 (5/5/2025, UEFI, American Megatrends Inc.) |
-| GPU | ZOTAC GeForce RTX 4080 AMP Extreme AIRO 16GB (ZT-D40810B-10P) — 9,728 CUDA cores, 304 Tensor cores (4th gen), 76 RT cores (3rd gen), boost clock 2565MHz (factory OC), 256-bit bus, 22.4 Gbps GDDR6X. Driver 596.49, VBIOS 95.03.1e.00.cf, WDDM mode, CUDA runtime (driver-reported) 13.2 — note PyTorch build below targets CUDA 12.1 toolkit, which is backward compatible with driver-reported 13.2 |
-| RAM | G.SKILL Trident Z5 RGB (F5-5600J3636D32GA2-TZ5RK) — 64GB (2×32GB) DDR5-5600, CL36-36-36-89, 1.25V, Intel XMP 3.0. Confirmed installed: 64.0GB, 63.2GB total physical, 67.2GB total virtual (4.00GB page file) |
-| CPU Cooling | Custom single loop, mixed-generation EKWB parts — EKWB EK-Quantum Velocity² D-RGB AM5 CPU water block (nickel/plexi, current-gen, required for AM5 socket support) → original 2017 EKWB EK-CoolStream XE 360 radiator kit (triple 120mm, copper fins/brass chambers, 60mm thick) → same-era EKWB DDC pump and 3× EK-Vardar 120mm PWM fans, all carried forward from the original XE 360 kit purchase rather than bought new for this build. Exact pump model/spec and fan variant/RPM not confirmed — this is 2017-era hardware and current EKWB spec sheets (DDC 4.2 PWM, EK-Vardar EVO series) don't necessarily reflect what shipped in that kit |
-| GPU Cooling | Air (stock triple-fan AMP Extreme AIRO cooler) — not part of the watercooling loop. EKWB does make a full-cover block for this exact card (EK-Quantum Vector² AMP/Trinity RTX 4080, D-RGB, Nickel + Plexi — announced Nov 2022, shipping from late Dec 2022, MSRP ~€265/$301 USD). It was sold out when checked in late 2023/early 2024; combined with the price, the GPU stayed air-cooled. Loop is CPU-only, EKWB products only |
-| Thermal Paste (CPU + GPU) | Thermal Grizzly Kryonaut — 12.5 W/mK thermal conductivity, non-electrically-conductive, -250°C to +350°C operating range |
-| Case | Thermaltake Core P8 Tempered Glass E-ATX Full-Tower (CA-1Q2-00M1WN-00) |
-| PSU | 850W, 80 PLUS Gold — manufacturer/model not yet confirmed. Sufficient headroom for the 320W GPU cap + 170W CPU TDP combined load (490W) with margin for the rest of the system |
-| Storage (C: — OS boot, "BOOT") | SanDisk SDSSDA240G, 238GB usable, SATA SSD — Windows install, page file (C:\pagefile.sys) |
-| Storage (D: — bulk/archival, "GAME") | SAMSUNG HD103SJ, 1TB, SATA HDD |
-| Storage (E: — training/dataset, "New Volume") | Samsung SSD 980 PRO 500GB, NVMe, PCIe interface |
-| Storage (F: — portable/thumb drive) | USB DISK 3.0, ~25.6GB, USB 3.0 — used for dataset mirroring on school machine |
-| Storage (G: — MB support media) | ~5.3GB, "MB Support CD" — motherboard driver disc, mounted virtual/optical media |
-| OS | Windows 11 Pro, version 10.0.26200 (Build 26200), kernel 10.0.26200.8737 |
-| Python | 3.12.10 |
-| CUDA | 12.1 (PyTorch build) / 13.2 (driver-reported runtime) |
-| PyTorch | 2.5.1+cu121 |
-| torchvision | 0.20.1+cu121 |
-
----
-
-## Setup
-
-**1. Install CUDA (Windows):**
-```bash
-01_install_cuda.bat
-```
-
-**2. Install Python packages:**
-```bash
-02_install_python_packages.bat
-```
-This creates a dedicated virtual environment at `E:\CSC-114\project\venv`,
-activates it, installs every package listed in Dependencies below, copies
-the training scripts into `E:\CSC-114\project`, and runs GPU verification
-automatically as its final step (calls `03_verify_gpu.py` if present).
-Takes 5–15 minutes; the PyTorch/CUDA download alone is ~2.5GB.
-
-**3. Verify GPU is visible to PyTorch (manual re-check, optional):**
-```bash
-python 03_verify_gpu.py
-```
-Already run automatically at the end of step 2 — rerun manually only if you
-need to re-confirm after changing drivers or the venv.
-
-**4. Install into an already-active environment (alternative to step 2):**
-```bash
-python install_deps.py
-```
-Use this instead of step 2 only if the venv already exists and is currently
-activated — this installs into whatever Python environment is active, it
-does not create or activate the venv itself.
-
-MNIST, EMNIST Digits, USPS, and SVHN download automatically via torchvision
-on first run of any training script. ARDIS IV must be sourced and placed
-manually per `supplementary_data.py`'s expected path — there is no separate
-dataset-download script in this repo.
-
----
-
-## Running
-
-Create `E:\CSC-114\project\` before first run. All subfolders are created automatically.
-
-Run any script independently in any order:
-```bash
-# Lion
-python mnist_lion_64.py
-python mnist_lion_128.py
-
-# AdamW
-python mnist_adamw_64.py
-python mnist_adamw_128.py
-
-# SGD
-python mnist_sgd_64.py
-python mnist_sgd_128.py
-
-# SOAP
-python ocr_soap_64.py
-python ocr_soap_128.py
-```
-
-To override batch size on any base script:
-```bash
-python mnist_lion_128.py --batch-size 512
-```
-
-To resume after a crash or force stop — just rerun the same command. The script
-detects the resume state and checkpoint automatically and continues from the last
-completed epoch.
-
----
-
-## Dependencies
-
-Training runs inside a dedicated virtual environment at
-`E:\CSC-114\project\venv`, created and populated by
-`02_install_python_packages.bat` (Windows batch, full setup including CUDA
-package install) or `install_deps.py` (Python-only installer, assumes venv
-already active). This is a separate, project-scoped environment — not the
-same as the global Python 3.12 install used for other tools on this machine
-(see note below).
-
-| Package | Purpose |
-|---|---|
-| `torch`, `torchvision`, `torchaudio` | Core training (`torch==2.5.1+cu121`) |
-| `torchmetrics` | Training metrics |
-| `onnx` | Model export |
-| `onnxruntime-gpu==1.19.2` | Pipeline inference — version pinned to match CUDA 12.1, do not upgrade without checking compatibility |
-| `lion-pytorch` | Lion optimizer |
-| `schedulefree` | Schedule-Free AdamW |
-| `pytorch_optimizer` | SOAP and 100+ other optimizers |
-| `numpy`, `matplotlib` | Numerics and plotting |
-| `pandas` | Kaggle CSV preprocessing |
-| `scipy` | SVHN `.mat` file loading |
-| `certifi` | SSL certificate fix for USPS download |
-| `kaggle` | Supplementary dataset download API — requires `kaggle.json` at `C:\Users\Will\.kaggle\kaggle.json` |
-| `psutil` | CPU and RAM monitoring |
-| `optuna` | Hyperparameter search (installed, not currently used per charter scope guard) |
-| `keras>=3.0`, `keras-hub`, `tensorflow-datasets` | Course assignment requirements, unrelated to this project's training pipeline |
-| `nvidia-smi` | Real VRAM usage reporting (included with NVIDIA driver, not pip-installed) |
-
-Install via `02_install_python_packages.bat` (creates the venv, installs
-everything, copies scripts, runs GPU verification) or `python install_deps.py`
-(installs into whatever environment is currently active — run this only after
-manually activating `E:\CSC-114\project\venv`).
-
-**Note on environment separation:** the `pip freeze` capture in the appendix
-below was taken from this machine's *global* Python 3.12 environment
-(`C:\Users\Will\AppData\Local\Programs\Python\Python312\...`), not from the
-project venv. That's why it shows unrelated tooling (ComfyUI, transformers,
-Flask) and is missing `onnx`, `onnxruntime-gpu`, `lion-pytorch`,
-`schedulefree`, and `pytorch_optimizer` — those are correctly installed
-inside `E:\CSC-114\project\venv`, confirmed by the SOAP training log
-referencing `E:\CSC-114\project\venv\Lib\site-packages\torch\...` directly.
-The appendix is kept for reference on what's globally available on this
-machine, but the venv (not the global environment) is the actual training
-environment and matches the table above.
-
-<details>
-<summary>Full <code>pip freeze</code> output — global environment, captured 2026-07-08</summary>
-
-```
-absl-py==2.4.0
-aiohappyeyeballs==2.6.1
-aiohttp==3.13.2
-aiosignal==1.4.0
-alembic==1.17.2
-annotated-types==0.7.0
-attrs==25.4.0
-av==16.0.1
-blinker==1.9.0
-certifi==2025.4.26
-charset-normalizer==3.4.2
-click==8.2.1
-colorama==0.4.6
-comfyui-embedded-docs==0.3.1
-comfyui-workflow-templates-core==0.3.27
-comfyui-workflow-templates-media-api==0.3.20
-comfyui-workflow-templates-media-image==0.3.27
-comfyui-workflow-templates-media-other==0.3.40
-comfyui-workflow-templates-media-video==0.3.15
-comfyui_frontend_package==1.34.8
-comfyui_workflow_templates==0.7.54
-duckduckgo_search==8.0.2
-einops==0.8.1
-filelock==3.19.1
-Flask==3.1.1
-frozenlist==1.8.0
-fsspec==2025.9.0
-greenlet==3.3.0
-h5py==3.16.0
-huggingface-hub==0.36.0
-idna==3.10
-itsdangerous==2.2.0
-Jinja2==3.1.6
-keras==3.14.1
-kornia==0.8.2
-kornia_rs==0.1.10
-lxml==5.4.0
-Mako==1.3.10
-markdown-it-py==4.2.0
-MarkupSafe==3.0.2
-mdurl==0.1.2
-ml_dtypes==0.5.4
-mpmath==1.3.0
-multidict==6.7.0
-namex==0.1.0
-networkx==3.5
-numpy==2.3.1
-optree==0.19.1
-packaging==25.0
-pandas==2.3.1
-pillow==11.3.0
-primp==0.15.0
-propcache==0.4.1
-psutil==7.1.3
-pydantic==2.12.5
-pydantic-settings==2.12.0
-pydantic_core==2.41.5
-Pygments==2.20.0
-python-dateutil==2.9.0.post0
-python-dotenv==1.2.1
-pytz==2025.2
-PyYAML==6.0.3
-regex==2025.11.3
-requests==2.32.3
-rich==15.0.0
-safetensors==0.7.0
-scipy==1.16.3
-sentencepiece==0.2.1
-setuptools==70.2.0
-six==1.17.0
-spandrel==0.4.1
-SQLAlchemy==2.0.45
-sympy==1.13.1
-tokenizers==0.22.1
-torch==2.5.1+cu121
-torchaudio==2.5.1+cu121
-torchsde==0.2.6
-torchvision==0.20.1+cu121
-tqdm==4.67.1
-trampoline==0.1.2
-transformers==4.57.3
-typing-inspection==0.4.2
-typing_extensions==4.15.0
-tzdata==2025.2
-urllib3==2.4.0
-Werkzeug==3.1.3
-yarl==1.22.0
-```
-
-</details>
-
-## Project Structure
-
-Current actual contents of `BECKHAMW3233/CSC-114/Project/` on GitHub, as of
-commit `c260fae`:
-
-```
-CSC-114/Project/
-├── adamw_64/                          # AdamW 64×64 — COMPLETE (99.46%)
-│   ├── v1_adamw_64_64.onnx
-│   ├── v1_adamw_64_best_64.pt
-│   ├── v1_adamw_64_cli_20260707_052554.txt
-│   ├── v1_adamw_64_curves_64.png
-│   ├── v1_adamw_64_final_64.pt
-│   └── v1_adamw_64_log_64.csv
-├── adamw_128/                         # AdamW 128×128 — COMPLETE (99.42%)
-│   ├── v1_adamw_128_128.onnx
-│   ├── v1_adamw_128_best_128.pt
-│   ├── v1_adamw_128_cli_20260709_234437.txt
-│   ├── v1_adamw_128_curves_128.png
-│   ├── v1_adamw_128_final_128.pt
-│   └── v1_adamw_128_log_128.csv
-├── lion_64/                           # Lion 64×64 — COMPLETE (99.49%)
-│   ├── v1_lion_64_64.onnx
-│   ├── v1_lion_64_best_64.pt
-│   ├── v1_lion_64_cli_20260706_234832.txt
-│   ├── v1_lion_64_curves_64.png
-│   ├── v1_lion_64_final_64.pt
-│   ├── v1_lion_64_log_64.csv
-│   └── v1_lion_64_quantized_64.pt
-├── lion_128/                          # Lion 128×128 — COMPLETE (99.45%)
-│   ├── v1_lion_128_128.onnx
-│   ├── v1_lion_128_best_128.pt
-│   ├── v1_lion_128_cli_20260709_113115.txt
-│   ├── v1_lion_128_curves_128.png
-│   ├── v1_lion_128_final_128.pt
-│   ├── v1_lion_128_log_128.csv
-│   └── v1_lion_128_quantized_128.pt
-├── sgd_64/                            # SGD 64×64 — COMPLETE (99.49%)
-│   ├── v1_sgd_64_64.onnx
-│   ├── v1_sgd_64_best_64.pt
-│   ├── v1_sgd_64_cli_20260707_134326.txt
-│   ├── v1_sgd_64_curves_64.png
-│   ├── v1_sgd_64_final_64.pt
-│   └── v1_sgd_64_log_64.csv
-├── sgd_128/                           # SGD 128×128 — COMPLETE (98.86%)
-│   ├── v1_sgd_128_128.onnx
-│   ├── v1_sgd_128_best_128.pt
-│   ├── v1_sgd_128_cli_20260710_163528.txt
-│   ├── v1_sgd_128_curves_128.png
-│   ├── v1_sgd_128_final_128.pt
-│   └── v1_sgd_128_log_128.csv
-├── pytorch_soap_64/                   # SOAP 64×64 — COMPLETE (99.65%)
-│   ├── soap_64.onnx
-│   ├── soap_64_20260709_003312.log
-│   ├── soap_64_best.pt
-│   ├── soap_64_curves.png
-│   ├── soap_64_final.pt
-│   └── soap_64_training_log.csv
-├── pytorch_soap_128/                  # SOAP 128×128 — COMPLETE (99.66%)
-│   ├── soap_128.onnx
-│   ├── soap_128_20260711_113053.log
-│   ├── soap_128_best.pt
-│   ├── soap_128_curves.png
-│   ├── soap_128_final.pt
-│   └── soap_128_training_log.csv
-├── datasets/
-│   └── kaggle/
-├── 01_install_cuda.bat
-├── 02_install_python_packages.bat
-├── 03_verify_gpu.py
-├── README.md
-├── install_deps.py
-├── mnist_adamw_64.py
-├── mnist_adamw_128.py
-├── mnist_lion_64.py
-├── mnist_lion_128.py
-├── mnist_sgd_64.py
-├── mnist_sgd_128.py
-├── ocr_soap_64.py
-├── ocr_soap_128.py
-├── ocr_pipeline_mnist.py
-└── supplementary_data.py
-```
-
-**Model output folders present:** `adamw_64`, `adamw_128`, `lion_64`,
-`lion_128`, `sgd_64`, `sgd_128`, `pytorch_soap_64`, `pytorch_soap_128`
-— each containing the full set of training artifacts (ONNX export,
-best/final checkpoints, per-epoch CSV log, training curves PNG, and CLI
-transcript).
-
-**All 8 planned models now complete.**
-
-**Note on file naming:** each script name identifies its optimizer family and
-resolution directly (`mnist_lion_64.py`, `ocr_soap_128.py`, etc.) without
-needing to open the file. Each script is fully independent — one optimizer,
-one resolution, one output folder.
-
----
-
-## Datasets
-
-### Primary
-
-**MNIST** — LeCun et al., 1998
-60,000 training / 10,000 test samples. 10 classes: digits 0–9. 28×28 grayscale.
-Downloaded automatically by torchvision on first run.
-
-### Supplementary Digit Sources
-
-All five sources load automatically via `supplementary_data.py`. Each is gracefully
-skipped if not present. Letter-only datasets (Kaggle A-Z, Chars74K, PG-HWLD, EMNIST
-Balanced) are explicitly excluded — this is a digits-only pipeline.
-
-| Dataset | Samples | Description |
-|---|---|---|
-| EMNIST Digits | 240,000 | NIST digits split, same lineage as MNIST |
-| MNIST (supplementary) | 60,000 | Loaded via wrapper for transform consistency |
-| USPS | 7,291 | Scanned US Postal Service envelopes |
-| SVHN | 73,257 | Street View House Numbers, real-world photographs |
-| ARDIS IV | 7,600 | Swedish historical church records, 19th–20th century writers |
-
-**Confirmed combined training set: 439,148 samples** — verified on first run
-2026-07-06. Class weight range: `0.000019 — 0.000024` (extremely tight — confirms
-well-balanced digit distribution across all five sources).
-
-Dataset location:
-```
-E:\CSC-114\emnist-model\datasets\pytorch\
-```
-
-Portable USB drive (F:) mirrors the dataset folder for use on school machines.
-Drive letter changes per machine — only one path reference needs updating per session.
-
-### Class Weighting
-
-`supplementary_data.py` uses pure inverse-frequency weighting (`DIGIT_BOOST = 1.0`,
-`NUM_CLASSES = 10`). No boost multiplier needed — with letter datasets excluded there
-is nothing to counterbalance. The original EMNIST v4 pipeline used `DIGIT_BOOST = 3.0x`
-to compensate for 372,450 Kaggle A-Z letter samples; that is not needed here.
-
----
-
 ## Models and Scripts
 
 ### Architecture Overview
@@ -561,124 +179,46 @@ roughly 1,400+ times per epoch.
 
 ---
 
-## Resolution Coverage — Hardware Confirmed
+## Datasets
 
-| Script | Architecture | Optimizer | 64×64 | 128×128 |
-|---|---|---|---|---|
-| mnist_lion_64/128 | OCRConvNet | Lion | ✓ | ✓ |
-| mnist_adamw_64/128 | OCRConvNetWide | SF-AdamW | ✓ | ✓ |
-| mnist_sgd_64/128 | OCRConvNetTriple | SGD | ✓ | ✓ |
-| ocr_soap_64/128 | OCRConvNetTriple | SOAP | ✓ | ✓ |
+### Primary
 
-**Target model count: 8** (4 optimizer families × 2 resolutions) — all complete.
+**MNIST** — LeCun et al., 1998
+60,000 training / 10,000 test samples. 10 classes: digits 0–9. 28×28 grayscale.
+Downloaded automatically by torchvision on first run.
 
----
+### Supplementary Digit Sources
 
-## Training Configuration
+All five sources load automatically via `supplementary_data.py`. Each is gracefully
+skipped if not present. Letter-only datasets (Kaggle A-Z, Chars74K, PG-HWLD, EMNIST
+Balanced) are explicitly excluded — this is a digits-only pipeline.
 
-### Script Architecture Change
+| Dataset | Samples | Description |
+|---|---|---|
+| EMNIST Digits | 240,000 | NIST digits split, same lineage as MNIST |
+| MNIST (supplementary) | 60,000 | Loaded via wrapper for transform consistency |
+| USPS | 7,291 | Scanned US Postal Service envelopes |
+| SVHN | 73,257 | Street View House Numbers, real-world photographs |
+| ARDIS IV | 7,600 | Swedish historical church records, 19th–20th century writers |
 
-The original three multi-resolution scripts (`ocr_pytorch_model.py`, `ocr_pytorch_model2.py`,
-`ocr_pytorch_model3.py`) were split into individual per-resolution, per-optimizer scripts.
+**Confirmed combined training set: 439,148 samples** — verified on first run
+2026-07-06. Class weight range: `0.000019 — 0.000024` (extremely tight — confirms
+well-balanced digit distribution across all five sources).
 
-**Reason:** The original scripts ran all resolutions sequentially in one process with
-no way to run a specific resolution independently. If 64×64 was already complete and
-you needed to run 128×128 only, you had to restart the entire script or modify the
-`RESOLUTIONS` list manually. The split scripts solve this — each is fully independent,
-named by optimizer and resolution, and can be started, stopped, and resumed without
-affecting any other script.
-
-### Exit Conditions (all scripts)
-
-Training stops on whichever fires first:
-
-1. **Early stopping** — val loss/acc fails to improve for PATIENCE epochs. Best
-   checkpoint saved automatically. Primary exit at 64×64 and 128×128 — MNIST at 10
-   classes converges fast. Confirmed: Lion 64×64 was still finding marginal improvements
-   at epoch 100+ before patience fired at epoch 143.
-   - Lion, AdamW scripts: PATIENCE = 15
-   - SGD, SOAP scripts: PATIENCE = 20
-2. **10-hour wall clock** — elapsed time since run start exceeds 10 hours, checked at
-   end of current epoch. Never cuts mid-epoch.
-3. **OOM / cuDNN engine failure** — caught by exception handler and steps down to
-   next batch size candidate. If all candidates fail, script exits cleanly.
-
-No fixed epoch cap. The wall clock and patience are the only governors.
-
-### Batch Size Auto-Detection and Override
-
-All scripts probe the largest safe batch size via a forward+backward pass at each
-candidate. After each probe, nvidia-smi is queried for actual dedicated VRAM usage —
-this catches Windows' silent shared memory spillover which PyTorch's own memory
-reporting cannot detect.
-
-All base split scripts accept a `--batch-size` argument to skip probing entirely:
-
-```bash
-python mnist_lion_128.py --batch-size 512
+Dataset location:
+```
+E:\CSC-114\emnist-model\datasets\pytorch\
 ```
 
-**Confirmed batch sizes:**
+Portable USB drive (F:) mirrors the dataset folder for use on school machines.
+Drive letter changes per machine — only one path reference needs updating per session.
 
-| Script | Resolution | Batch | VRAM | Notes |
-|---|---|---|---|---|
-| mnist_lion_64 | 64×64 | 1024 (auto) | 14.0/14.4GB peak | 94s steady, 143 epochs, 99.49% |
-| mnist_lion_128 | 128×128 | 128 | 7.8/7.9GB peak | ~346s avg (derived), 104 epochs, 99.45% |
-| mnist_adamw_64 | 64×64 | 512 (override) | 13.6/14.4GB peak | 244–255s steady, 119 epochs, 99.46% |
-| mnist_adamw_128 | 128×128 | 128 | 11.8/13.2GB peak | ~864s steady, 42 epochs, 99.42% |
-| mnist_sgd_64 | 64×64 | 512 (override) | 11.9/15.1GB peak | 256–383s, 104 epochs, 99.49% |
-| ocr_soap_64 | 64×64 | 512 (auto — hardcoded ceiling) | 9.5/12.9GB peak | ~172s steady, 107 epochs, 99.65% |
-| mnist_sgd_128 | 128×128 | 128 (override) | 11.7/14.4GB peak | ~961–1257s, 33 epochs (10.17h wall clock), 98.86% |
-| ocr_soap_128 | 128×128 | 128 (override — auto-detect skipped) | 9.5/12.9GB peak | ~622–707s, 49 epochs (patience exit), 99.66% |
+### Class Weighting
 
-### Resume Capability
-
-All scripts save a resume state after every epoch as a `.pt` file:
-```
-v1_lion_64_resume_64.pt
-v1_lion_128_resume_128.pt
-...
-```
-
-On restart, if both the resume `.pt` and the best checkpoint `.pt` file exist, training
-continues from the next epoch with full state restored: model weights, optimizer state,
-scheduler state, scaler state, early stop counter, best val loss, and full history.
-Resume file is deleted on clean completion so a fresh restart doesn't accidentally
-resume a finished run. Crash or force-stop loses at most one epoch of progress.
-
-### VRAM Monitoring Fix
-
-Original scripts used `torch.cuda.memory_allocated()` which captures the idle snapshot
-between epochs after tensors are freed — reporting near-zero values while Task Manager
-showed 9-11GB actually in use. Fixed to `torch.cuda.max_memory_allocated()` with
-`torch.cuda.reset_peak_memory_stats()` called at epoch start. Now reports actual peak
-VRAM during the training forward+backward pass, consistent with Task Manager readings.
-
-### Windows DataLoader Fix
-
-`NUM_WORKERS=4` during training, `num_workers_override=0` for val and test DataLoaders:
-
-```python
-train_loader = make_dataloader(train_ds, batch_size, use_weighted_sampler=True)  # NUM_WORKERS=4
-val_loader   = make_dataloader(val_ds,  batch_size, num_workers_override=0)
-test_loader  = make_dataloader(test_ds, batch_size, num_workers_override=0)
-```
-
-At `NUM_WORKERS=8` (original value), Windows DataLoader spawned 8 worker processes
-during the post-training eval pass. This caused a deadlock that froze VS Code, the
-terminal, and snipping tool — requiring a force kill. Root cause: Windows multiprocessing
-for DataLoader is unreliable outside the main training loop. Val and test loaders use
-0 workers (main thread). Training loaders use 4 workers for throughput.
-
----
-
-## Normalization
-
-All models use **[0, 1] normalization** — `ToTensor()` alone, no mean/std shift:
-```python
-arr = arr / 255.0
-```
-Inference pipelines must normalize identically before passing to any model or ONNX session.
+`supplementary_data.py` uses pure inverse-frequency weighting (`DIGIT_BOOST = 1.0`,
+`NUM_CLASSES = 10`). No boost multiplier needed — with letter datasets excluded there
+is nothing to counterbalance. The original EMNIST v4 pipeline used `DIGIT_BOOST = 3.0x`
+to compensate for 372,450 Kaggle A-Z letter samples; that is not needed here.
 
 ---
 
@@ -1043,31 +583,6 @@ strongest result, ahead of AdamW (99.42%) and SGD (98.86%).
 
 ---
 
-## Estimated Training Times
-
-*Updated with measured data as runs complete.*
-
-| Script | Resolution | Batch | Est. epoch time | Est. total (patience) | Est. total (10h cap) |
-|---|---|---|---|---|---|
-| mnist_lion_64 | 64×64 | 1024 | **94s (measured)** | **143 epochs (~3.7h)** | N/A |
-| mnist_lion_128 | 128×128 | 128 | **~346s (derived avg)** | **104 epochs — wall clock (10.07h)** | N/A — complete |
-| mnist_adamw_64 | 64×64 | 512 | **244–255s (measured)** | **119 epochs (~8.3h)** | N/A |
-| mnist_adamw_128 | 128×128 | 128 | **~864s (measured)** | **42 epochs — wall clock (10.20h)** | N/A — complete |
-| mnist_sgd_64 | 64×64 | 512 | **256–383s (measured)** | **104 epochs (~8.5h)** | N/A |
-| mnist_sgd_128 | 128×128 | 128 | **~961–1257s (measured)** | **33 epochs — wall clock (10.17h)** | N/A — complete |
-| ocr_soap_64 | 64×64 | 512 | **~172s (measured)** | **107 epochs — patience exit (5.1h)** | N/A — complete |
-| ocr_soap_128 | 128×128 | 128 | **~622–707s (measured)** | **49 epochs — patience exit (~8.6h)** | N/A — complete |
-
-**Total estimated training week:** All 8 models across the full week starting
-2026-07-07. Scripts run sequentially on one machine (RTX 4080). Overnight runs
-handle the longer 128×128 sessions. Resume capability means interrupted
-runs continue without loss.
-
-*This table will be updated with actual measured epoch times and final epoch counts
-once training runs complete.*
-
----
-
 ## Real-World Testing — 8-Model Ensemble (2026-07-12)
 
 **Pipeline fix applied before this run:** `--model-dir` originally scanned
@@ -1203,6 +718,511 @@ answered by this run and needs a follow-up pass with hand-scored ground truth.
 
 ---
 
+## Resolution Coverage — Hardware Confirmed
+
+| Script | Architecture | Optimizer | 64×64 | 128×128 |
+|---|---|---|---|---|
+| mnist_lion_64/128 | OCRConvNet | Lion | ✓ | ✓ |
+| mnist_adamw_64/128 | OCRConvNetWide | SF-AdamW | ✓ | ✓ |
+| mnist_sgd_64/128 | OCRConvNetTriple | SGD | ✓ | ✓ |
+| ocr_soap_64/128 | OCRConvNetTriple | SOAP | ✓ | ✓ |
+
+**Target model count: 8** (4 optimizer families × 2 resolutions) — all complete.
+
+---
+
+## Training Configuration
+
+### Script Architecture Change
+
+The original three multi-resolution scripts (`ocr_pytorch_model.py`, `ocr_pytorch_model2.py`,
+`ocr_pytorch_model3.py`) were split into individual per-resolution, per-optimizer scripts.
+
+**Reason:** The original scripts ran all resolutions sequentially in one process with
+no way to run a specific resolution independently. If 64×64 was already complete and
+you needed to run 128×128 only, you had to restart the entire script or modify the
+`RESOLUTIONS` list manually. The split scripts solve this — each is fully independent,
+named by optimizer and resolution, and can be started, stopped, and resumed without
+affecting any other script.
+
+### Exit Conditions (all scripts)
+
+Training stops on whichever fires first:
+
+1. **Early stopping** — val loss/acc fails to improve for PATIENCE epochs. Best
+   checkpoint saved automatically. Primary exit at 64×64 and 128×128 — MNIST at 10
+   classes converges fast. Confirmed: Lion 64×64 was still finding marginal improvements
+   at epoch 100+ before patience fired at epoch 143.
+   - Lion, AdamW scripts: PATIENCE = 15
+   - SGD, SOAP scripts: PATIENCE = 20
+2. **10-hour wall clock** — elapsed time since run start exceeds 10 hours, checked at
+   end of current epoch. Never cuts mid-epoch.
+3. **OOM / cuDNN engine failure** — caught by exception handler and steps down to
+   next batch size candidate. If all candidates fail, script exits cleanly.
+
+No fixed epoch cap. The wall clock and patience are the only governors.
+
+### Batch Size Auto-Detection and Override
+
+All scripts probe the largest safe batch size via a forward+backward pass at each
+candidate. After each probe, nvidia-smi is queried for actual dedicated VRAM usage —
+this catches Windows' silent shared memory spillover which PyTorch's own memory
+reporting cannot detect.
+
+All base split scripts accept a `--batch-size` argument to skip probing entirely:
+
+```bash
+python mnist_lion_128.py --batch-size 512
+```
+
+**Confirmed batch sizes:**
+
+| Script | Resolution | Batch | VRAM | Notes |
+|---|---|---|---|---|
+| mnist_lion_64 | 64×64 | 1024 (auto) | 14.0/14.4GB peak | 94s steady, 143 epochs, 99.49% |
+| mnist_lion_128 | 128×128 | 128 | 7.8/7.9GB peak | ~346s avg (derived), 104 epochs, 99.45% |
+| mnist_adamw_64 | 64×64 | 512 (override) | 13.6/14.4GB peak | 244–255s steady, 119 epochs, 99.46% |
+| mnist_adamw_128 | 128×128 | 128 | 11.8/13.2GB peak | ~864s steady, 42 epochs, 99.42% |
+| mnist_sgd_64 | 64×64 | 512 (override) | 11.9/15.1GB peak | 256–383s, 104 epochs, 99.49% |
+| ocr_soap_64 | 64×64 | 512 (auto — hardcoded ceiling) | 9.5/12.9GB peak | ~172s steady, 107 epochs, 99.65% |
+| mnist_sgd_128 | 128×128 | 128 (override) | 11.7/14.4GB peak | ~961–1257s, 33 epochs (10.17h wall clock), 98.86% |
+| ocr_soap_128 | 128×128 | 128 (override — auto-detect skipped) | 9.5/12.9GB peak | ~622–707s, 49 epochs (patience exit), 99.66% |
+
+### Resume Capability
+
+All scripts save a resume state after every epoch as a `.pt` file:
+```
+v1_lion_64_resume_64.pt
+v1_lion_128_resume_128.pt
+...
+```
+
+On restart, if both the resume `.pt` and the best checkpoint `.pt` file exist, training
+continues from the next epoch with full state restored: model weights, optimizer state,
+scheduler state, scaler state, early stop counter, best val loss, and full history.
+Resume file is deleted on clean completion so a fresh restart doesn't accidentally
+resume a finished run. Crash or force-stop loses at most one epoch of progress.
+
+### VRAM Monitoring Fix
+
+Original scripts used `torch.cuda.memory_allocated()` which captures the idle snapshot
+between epochs after tensors are freed — reporting near-zero values while Task Manager
+showed 9-11GB actually in use. Fixed to `torch.cuda.max_memory_allocated()` with
+`torch.cuda.reset_peak_memory_stats()` called at epoch start. Now reports actual peak
+VRAM during the training forward+backward pass, consistent with Task Manager readings.
+
+### Windows DataLoader Fix
+
+`NUM_WORKERS=4` during training, `num_workers_override=0` for val and test DataLoaders:
+
+```python
+train_loader = make_dataloader(train_ds, batch_size, use_weighted_sampler=True)  # NUM_WORKERS=4
+val_loader   = make_dataloader(val_ds,  batch_size, num_workers_override=0)
+test_loader  = make_dataloader(test_ds, batch_size, num_workers_override=0)
+```
+
+At `NUM_WORKERS=8` (original value), Windows DataLoader spawned 8 worker processes
+during the post-training eval pass. This caused a deadlock that froze VS Code, the
+terminal, and snipping tool — requiring a force kill. Root cause: Windows multiprocessing
+for DataLoader is unreliable outside the main training loop. Val and test loaders use
+0 workers (main thread). Training loaders use 4 workers for throughput.
+
+---
+
+## Training Time
+
+### Summary (by script)
+
+| Script | Resolution | Batch | Epoch time | Total (stop reason) |
+|---|---|---|---|---|
+| mnist_lion_64 | 64×64 | 1024 | 94s (measured) | 143 epochs — patience (~3.7h) |
+| mnist_lion_128 | 128×128 | 128 | ~346s (derived avg) | 104 epochs — wall clock (10.07h) |
+| mnist_adamw_64 | 64×64 | 512 | 244–255s (measured) | 119 epochs — patience (~8.3h) |
+| mnist_adamw_128 | 128×128 | 128 | ~864s (measured) | 42 epochs — wall clock (10.20h) |
+| mnist_sgd_64 | 64×64 | 512 | 256–383s (measured) | 104 epochs — patience (~8.5h) |
+| mnist_sgd_128 | 128×128 | 128 | ~961–1257s (measured) | 33 epochs — wall clock (10.17h) |
+| ocr_soap_64 | 64×64 | 512 | ~172s (measured) | 107 epochs — patience (5.1h) |
+| ocr_soap_128 | 128×128 | 128 | ~622–707s (measured) | 49 epochs — patience (~8.6h) |
+
+All 8 models completed across the week starting 2026-07-07, run sequentially
+on one machine (RTX 4080). Overnight runs handled the longer 128×128 sessions.
+Resume capability meant interrupted runs continued without loss.
+
+### Total (exact, summed from logs)
+
+Summed directly from the per-epoch wall-clock seconds recorded in each
+model's training log/CLI transcript — every epoch's `[...s]` value added up
+per model, not estimated.
+
+| Model | Epochs | Total time |
+|---|---|---|
+| Lion 64×64 | 143 | 13,522s (3.76h) |
+| Lion 128×128 | 104 | 36,251s (10.07h) |
+| AdamW 64×64 | 119 | 29,650s (8.24h) |
+| AdamW 128×128 | 42 | 36,698s (10.19h) |
+| SGD 64×64 | 104 | 30,060s (8.35h) |
+| SGD 128×128 | 33 | 36,603s (10.17h) |
+| SOAP 64×64 | 107 | 17,869s (4.96h) |
+| SOAP 128×128 | 49 | 31,245s (8.68h) |
+
+**Total GPU training time across all 8 models: 231,898 seconds — 64.42 hours
+(~2.68 days) of continuous RTX 4080 compute.**
+
+This is training time only — dataset loading, ONNX export/validation, and
+per-class accuracy analysis at the end of each run are not included in these
+per-epoch sums.
+
+---
+
+## Normalization
+
+All models use **[0, 1] normalization** — `ToTensor()` alone, no mean/std shift:
+```python
+arr = arr / 255.0
+```
+Inference pipelines must normalize identically before passing to any model or ONNX session.
+
+---
+
+## Hardware Target
+
+| Component | Spec |
+|---|---|
+| CPU | AMD Ryzen 9 7900X — 12 cores / 24 threads, Zen 4, base 4.7GHz (confirmed 4701MHz), boost up to 5.6GHz, 64MB L3 cache, 170W TDP |
+| Motherboard | ASUS ROG Crosshair X670E Hero (Rev 1.xx) — AMD X670E chipset, Socket AM5, 18+2 phase power delivery, PCIe 5.0, BIOS 3003 (5/5/2025, UEFI, American Megatrends Inc.) |
+| GPU | ZOTAC GeForce RTX 4080 AMP Extreme AIRO 16GB (ZT-D40810B-10P) — 9,728 CUDA cores, 304 Tensor cores (4th gen), 76 RT cores (3rd gen), boost clock 2565MHz (factory OC), 256-bit bus, 22.4 Gbps GDDR6X. Driver 596.49, VBIOS 95.03.1e.00.cf, WDDM mode, CUDA runtime (driver-reported) 13.2 — note PyTorch build below targets CUDA 12.1 toolkit, which is backward compatible with driver-reported 13.2 |
+| RAM | G.SKILL Trident Z5 RGB (F5-5600J3636D32GA2-TZ5RK) — 64GB (2×32GB) DDR5-5600, CL36-36-36-89, 1.25V, Intel XMP 3.0. Confirmed installed: 64.0GB, 63.2GB total physical, 67.2GB total virtual (4.00GB page file) |
+| CPU Cooling | Custom single loop, mixed-generation EKWB parts — EKWB EK-Quantum Velocity² D-RGB AM5 CPU water block (nickel/plexi, current-gen, required for AM5 socket support) → original 2017 EKWB EK-CoolStream XE 360 radiator kit (triple 120mm, copper fins/brass chambers, 60mm thick) → same-era EKWB DDC pump and 3× EK-Vardar 120mm PWM fans, all carried forward from the original XE 360 kit purchase rather than bought new for this build. Exact pump model/spec and fan variant/RPM not confirmed — this is 2017-era hardware and current EKWB spec sheets (DDC 4.2 PWM, EK-Vardar EVO series) don't necessarily reflect what shipped in that kit |
+| GPU Cooling | Air (stock triple-fan AMP Extreme AIRO cooler) — not part of the watercooling loop. EKWB does make a full-cover block for this exact card (EK-Quantum Vector² AMP/Trinity RTX 4080, D-RGB, Nickel + Plexi — announced Nov 2022, shipping from late Dec 2022, MSRP ~€265/$301 USD). It was sold out when checked in late 2023/early 2024; combined with the price, the GPU stayed air-cooled. Loop is CPU-only, EKWB products only |
+| Thermal Paste (CPU + GPU) | Thermal Grizzly Kryonaut — 12.5 W/mK thermal conductivity, non-electrically-conductive, -250°C to +350°C operating range |
+| Case | Thermaltake Core P8 Tempered Glass E-ATX Full-Tower (CA-1Q2-00M1WN-00) |
+| PSU | 850W, 80 PLUS Gold — manufacturer/model not yet confirmed. Sufficient headroom for the 320W GPU cap + 170W CPU TDP combined load (490W) with margin for the rest of the system |
+| Storage (C: — OS boot, "BOOT") | SanDisk SDSSDA240G, 238GB usable, SATA SSD — Windows install, page file (C:\pagefile.sys) |
+| Storage (D: — bulk/archival, "GAME") | SAMSUNG HD103SJ, 1TB, SATA HDD |
+| Storage (E: — training/dataset, "New Volume") | Samsung SSD 980 PRO 500GB, NVMe, PCIe interface |
+| Storage (F: — portable/thumb drive) | USB DISK 3.0, ~25.6GB, USB 3.0 — used for dataset mirroring on school machine |
+| Storage (G: — MB support media) | ~5.3GB, "MB Support CD" — motherboard driver disc, mounted virtual/optical media |
+| OS | Windows 11 Pro, version 10.0.26200 (Build 26200), kernel 10.0.26200.8737 |
+| Python | 3.12.10 |
+| CUDA | 12.1 (PyTorch build) / 13.2 (driver-reported runtime) |
+| PyTorch | 2.5.1+cu121 |
+| torchvision | 0.20.1+cu121 |
+
+---
+
+## Setup
+
+**1. Install CUDA (Windows):**
+```bash
+01_install_cuda.bat
+```
+
+**2. Install Python packages:**
+```bash
+02_install_python_packages.bat
+```
+This creates a dedicated virtual environment at `E:\CSC-114\project\venv`,
+activates it, installs every package listed in Dependencies below, copies
+the training scripts into `E:\CSC-114\project`, and runs GPU verification
+automatically as its final step (calls `03_verify_gpu.py` if present).
+Takes 5–15 minutes; the PyTorch/CUDA download alone is ~2.5GB.
+
+**3. Verify GPU is visible to PyTorch (manual re-check, optional):**
+```bash
+python 03_verify_gpu.py
+```
+Already run automatically at the end of step 2 — rerun manually only if you
+need to re-confirm after changing drivers or the venv.
+
+**4. Install into an already-active environment (alternative to step 2):**
+```bash
+python install_deps.py
+```
+Use this instead of step 2 only if the venv already exists and is currently
+activated — this installs into whatever Python environment is active, it
+does not create or activate the venv itself.
+
+MNIST, EMNIST Digits, USPS, and SVHN download automatically via torchvision
+on first run of any training script. ARDIS IV must be sourced and placed
+manually per `supplementary_data.py`'s expected path — there is no separate
+dataset-download script in this repo.
+
+---
+
+## Running
+
+Create `E:\CSC-114\project\` before first run. All subfolders are created automatically.
+
+Run any script independently in any order:
+```bash
+# Lion
+python mnist_lion_64.py
+python mnist_lion_128.py
+
+# AdamW
+python mnist_adamw_64.py
+python mnist_adamw_128.py
+
+# SGD
+python mnist_sgd_64.py
+python mnist_sgd_128.py
+
+# SOAP
+python ocr_soap_64.py
+python ocr_soap_128.py
+```
+
+To override batch size on any base script:
+```bash
+python mnist_lion_128.py --batch-size 512
+```
+
+To resume after a crash or force stop — just rerun the same command. The script
+detects the resume state and checkpoint automatically and continues from the last
+completed epoch.
+
+---
+
+## Dependencies
+
+Training runs inside a dedicated virtual environment at
+`E:\CSC-114\project\venv`, created and populated by
+`02_install_python_packages.bat` (Windows batch, full setup including CUDA
+package install) or `install_deps.py` (Python-only installer, assumes venv
+already active). This is a separate, project-scoped environment — not the
+same as the global Python 3.12 install used for other tools on this machine
+(see note below).
+
+| Package | Purpose |
+|---|---|
+| `torch`, `torchvision`, `torchaudio` | Core training (`torch==2.5.1+cu121`) |
+| `torchmetrics` | Training metrics |
+| `onnx` | Model export |
+| `onnxruntime-gpu==1.19.2` | Pipeline inference — version pinned to match CUDA 12.1, do not upgrade without checking compatibility |
+| `lion-pytorch` | Lion optimizer |
+| `schedulefree` | Schedule-Free AdamW |
+| `pytorch_optimizer` | SOAP and 100+ other optimizers |
+| `numpy`, `matplotlib` | Numerics and plotting |
+| `pandas` | Kaggle CSV preprocessing |
+| `scipy` | SVHN `.mat` file loading |
+| `certifi` | SSL certificate fix for USPS download |
+| `kaggle` | Supplementary dataset download API — requires `kaggle.json` at `C:\Users\Will\.kaggle\kaggle.json` |
+| `psutil` | CPU and RAM monitoring |
+| `optuna` | Hyperparameter search (installed, not currently used per charter scope guard) |
+| `keras>=3.0`, `keras-hub`, `tensorflow-datasets` | Course assignment requirements, unrelated to this project's training pipeline |
+| `nvidia-smi` | Real VRAM usage reporting (included with NVIDIA driver, not pip-installed) |
+
+Install via `02_install_python_packages.bat` (creates the venv, installs
+everything, copies scripts, runs GPU verification) or `python install_deps.py`
+(installs into whatever environment is currently active — run this only after
+manually activating `E:\CSC-114\project\venv`).
+
+**Note on environment separation:** the `pip freeze` capture in the appendix
+below was taken from this machine's *global* Python 3.12 environment
+(`C:\Users\Will\AppData\Local\Programs\Python\Python312\...`), not from the
+project venv. That's why it shows unrelated tooling (ComfyUI, transformers,
+Flask) and is missing `onnx`, `onnxruntime-gpu`, `lion-pytorch`,
+`schedulefree`, and `pytorch_optimizer` — those are correctly installed
+inside `E:\CSC-114\project\venv`, confirmed by the SOAP training log
+referencing `E:\CSC-114\project\venv\Lib\site-packages\torch\...` directly.
+The appendix is kept for reference on what's globally available on this
+machine, but the venv (not the global environment) is the actual training
+environment and matches the table above.
+
+<details>
+<summary>Full <code>pip freeze</code> output — global environment, captured 2026-07-08</summary>
+
+```
+absl-py==2.4.0
+aiohappyeyeballs==2.6.1
+aiohttp==3.13.2
+aiosignal==1.4.0
+alembic==1.17.2
+annotated-types==0.7.0
+attrs==25.4.0
+av==16.0.1
+blinker==1.9.0
+certifi==2025.4.26
+charset-normalizer==3.4.2
+click==8.2.1
+colorama==0.4.6
+comfyui-embedded-docs==0.3.1
+comfyui-workflow-templates-core==0.3.27
+comfyui-workflow-templates-media-api==0.3.20
+comfyui-workflow-templates-media-image==0.3.27
+comfyui-workflow-templates-media-other==0.3.40
+comfyui-workflow-templates-media-video==0.3.15
+comfyui_frontend_package==1.34.8
+comfyui_workflow_templates==0.7.54
+duckduckgo_search==8.0.2
+einops==0.8.1
+filelock==3.19.1
+Flask==3.1.1
+frozenlist==1.8.0
+fsspec==2025.9.0
+greenlet==3.3.0
+h5py==3.16.0
+huggingface-hub==0.36.0
+idna==3.10
+itsdangerous==2.2.0
+Jinja2==3.1.6
+keras==3.14.1
+kornia==0.8.2
+kornia_rs==0.1.10
+lxml==5.4.0
+Mako==1.3.10
+markdown-it-py==4.2.0
+MarkupSafe==3.0.2
+mdurl==0.1.2
+ml_dtypes==0.5.4
+mpmath==1.3.0
+multidict==6.7.0
+namex==0.1.0
+networkx==3.5
+numpy==2.3.1
+optree==0.19.1
+packaging==25.0
+pandas==2.3.1
+pillow==11.3.0
+primp==0.15.0
+propcache==0.4.1
+psutil==7.1.3
+pydantic==2.12.5
+pydantic-settings==2.12.0
+pydantic_core==2.41.5
+Pygments==2.20.0
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.1
+pytz==2025.2
+PyYAML==6.0.3
+regex==2025.11.3
+requests==2.32.3
+rich==15.0.0
+safetensors==0.7.0
+scipy==1.16.3
+sentencepiece==0.2.1
+setuptools==70.2.0
+six==1.17.0
+spandrel==0.4.1
+SQLAlchemy==2.0.45
+sympy==1.13.1
+tokenizers==0.22.1
+torch==2.5.1+cu121
+torchaudio==2.5.1+cu121
+torchsde==0.2.6
+torchvision==0.20.1+cu121
+tqdm==4.67.1
+trampoline==0.1.2
+transformers==4.57.3
+typing-inspection==0.4.2
+typing_extensions==4.15.0
+tzdata==2025.2
+urllib3==2.4.0
+Werkzeug==3.1.3
+yarl==1.22.0
+```
+
+</details>
+
+## Project Structure
+
+Current actual contents of `BECKHAMW3233/CSC-114/Project/` on GitHub, as of
+commit `c260fae`:
+
+```
+CSC-114/Project/
+├── adamw_64/                          # AdamW 64×64 — COMPLETE (99.46%)
+│   ├── v1_adamw_64_64.onnx
+│   ├── v1_adamw_64_best_64.pt
+│   ├── v1_adamw_64_cli_20260707_052554.txt
+│   ├── v1_adamw_64_curves_64.png
+│   ├── v1_adamw_64_final_64.pt
+│   └── v1_adamw_64_log_64.csv
+├── adamw_128/                         # AdamW 128×128 — COMPLETE (99.42%)
+│   ├── v1_adamw_128_128.onnx
+│   ├── v1_adamw_128_best_128.pt
+│   ├── v1_adamw_128_cli_20260709_234437.txt
+│   ├── v1_adamw_128_curves_128.png
+│   ├── v1_adamw_128_final_128.pt
+│   └── v1_adamw_128_log_128.csv
+├── lion_64/                           # Lion 64×64 — COMPLETE (99.49%)
+│   ├── v1_lion_64_64.onnx
+│   ├── v1_lion_64_best_64.pt
+│   ├── v1_lion_64_cli_20260706_234832.txt
+│   ├── v1_lion_64_curves_64.png
+│   ├── v1_lion_64_final_64.pt
+│   ├── v1_lion_64_log_64.csv
+│   └── v1_lion_64_quantized_64.pt
+├── lion_128/                          # Lion 128×128 — COMPLETE (99.45%)
+│   ├── v1_lion_128_128.onnx
+│   ├── v1_lion_128_best_128.pt
+│   ├── v1_lion_128_cli_20260709_113115.txt
+│   ├── v1_lion_128_curves_128.png
+│   ├── v1_lion_128_final_128.pt
+│   ├── v1_lion_128_log_128.csv
+│   └── v1_lion_128_quantized_128.pt
+├── sgd_64/                            # SGD 64×64 — COMPLETE (99.49%)
+│   ├── v1_sgd_64_64.onnx
+│   ├── v1_sgd_64_best_64.pt
+│   ├── v1_sgd_64_cli_20260707_134326.txt
+│   ├── v1_sgd_64_curves_64.png
+│   ├── v1_sgd_64_final_64.pt
+│   └── v1_sgd_64_log_64.csv
+├── sgd_128/                           # SGD 128×128 — COMPLETE (98.86%)
+│   ├── v1_sgd_128_128.onnx
+│   ├── v1_sgd_128_best_128.pt
+│   ├── v1_sgd_128_cli_20260710_163528.txt
+│   ├── v1_sgd_128_curves_128.png
+│   ├── v1_sgd_128_final_128.pt
+│   └── v1_sgd_128_log_128.csv
+├── pytorch_soap_64/                   # SOAP 64×64 — COMPLETE (99.65%)
+│   ├── soap_64.onnx
+│   ├── soap_64_20260709_003312.log
+│   ├── soap_64_best.pt
+│   ├── soap_64_curves.png
+│   ├── soap_64_final.pt
+│   └── soap_64_training_log.csv
+├── pytorch_soap_128/                  # SOAP 128×128 — COMPLETE (99.66%)
+│   ├── soap_128.onnx
+│   ├── soap_128_20260711_113053.log
+│   ├── soap_128_best.pt
+│   ├── soap_128_curves.png
+│   ├── soap_128_final.pt
+│   └── soap_128_training_log.csv
+├── datasets/
+│   └── kaggle/
+├── 01_install_cuda.bat
+├── 02_install_python_packages.bat
+├── 03_verify_gpu.py
+├── README.md
+├── install_deps.py
+├── mnist_adamw_64.py
+├── mnist_adamw_128.py
+├── mnist_lion_64.py
+├── mnist_lion_128.py
+├── mnist_sgd_64.py
+├── mnist_sgd_128.py
+├── ocr_soap_64.py
+├── ocr_soap_128.py
+├── ocr_pipeline_mnist.py
+└── supplementary_data.py
+```
+
+**Model output folders present:** `adamw_64`, `adamw_128`, `lion_64`,
+`lion_128`, `sgd_64`, `sgd_128`, `pytorch_soap_64`, `pytorch_soap_128`
+— each containing the full set of training artifacts (ONNX export,
+best/final checkpoints, per-epoch CSV log, training curves PNG, and CLI
+transcript).
+
+**All 8 planned models now complete.**
+
+**Note on file naming:** each script name identifies its optimizer family and
+resolution directly (`mnist_lion_64.py`, `ocr_soap_128.py`, etc.) without
+needing to open the file. Each script is fully independent — one optimizer,
+one resolution, one output folder.
+
+---
+
 ## Output Structure
 
 **Local training output** writes to `E:\CSC-114\project\` with each script in
@@ -1241,31 +1261,5 @@ Datasets remain in their original location:
 ```
 E:\CSC-114\emnist-model\datasets\pytorch\
 ```
-
----
-
-## Total Training Time
-
-Summed directly from the per-epoch wall-clock seconds recorded in each
-model's training log/CLI transcript — every epoch's `[...s]` value added up
-per model, not estimated.
-
-| Model | Epochs | Total time |
-|---|---|---|
-| Lion 64×64 | 143 | 13,522s (3.76h) |
-| Lion 128×128 | 104 | 36,251s (10.07h) |
-| AdamW 64×64 | 119 | 29,650s (8.24h) |
-| AdamW 128×128 | 42 | 36,698s (10.19h) |
-| SGD 64×64 | 104 | 30,060s (8.35h) |
-| SGD 128×128 | 33 | 36,603s (10.17h) |
-| SOAP 64×64 | 107 | 17,869s (4.96h) |
-| SOAP 128×128 | 49 | 31,245s (8.68h) |
-
-**Total GPU training time across all 8 models: 231,898 seconds — 64.42 hours
-(~2.68 days) of continuous RTX 4080 compute.**
-
-This is training time only — dataset loading, ONNX export/validation, and
-per-class accuracy analysis at the end of each run are not included in these
-per-epoch sums.
 
 ---

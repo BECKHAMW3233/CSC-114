@@ -80,7 +80,6 @@ DIGIT_TO_BYCLASS    = {i: i for i in range(10)}
 class EMNISTDigitsDataset(Dataset):
     """
     EMNIST Digits split — 280,000 training + 40,000 test samples, digits 0-9.
-    Counterbalances Kaggle A-Z uppercase flood.
     Digits 0-9 map directly to byclass indices 0-9.
     """
     def __init__(self, train: bool = True, transform=None):
@@ -612,7 +611,7 @@ def load_supplementary(
             print(f"  [Supplementary] PG-HWLD skipped: {e}")
 
     if not datasets:
-        print("  [Supplementary] No supplementary data available — using EMNIST byclass only")
+        print("  [Supplementary] No supplementary data available — using base MNIST only")
         return None
 
     print(f"  [Supplementary] Total supplementary samples: {total:,}")

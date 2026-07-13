@@ -1,8 +1,10 @@
 """
 ocr_soap_64.py
 ==============
-MNIST OCR — OCRConvNetTriple, SOAP optimizer, 64×64
+Digit OCR — OCRConvNetTriple, SOAP optimizer, 64×64
 Pure PyTorch — Triple-width channels + Multi-Scale feature pyramid fusion.
+Base dataset is MNIST; optionally merged with supplementary digit sources
+(USPS, SVHN, ARDIS, etc.) via supplementary_data.py when available.
 
 Architecture — OCRConvNetTriple:
   Channel progression: 96→192→384→768
@@ -10,9 +12,24 @@ Architecture — OCRConvNetTriple:
   Classifier head: 1344→1024→512→256→128→10 (5 layers, GELU)
   SE reduction: 16, drop_path=0.05, dropout=0.35 (first classifier layer)
   label_smoothing=0.05
-  ~4.6M parameters
+  ~7.6M parameters (7,573,482 actual)
 
 Install: pip install pytorch_optimizer psutil
+
+Usage:
+  Normal run (auto-detects batch size — tries 512, 256, 128, 64 in order):
+    python ocr_soap_64.py
+
+  Force a specific batch size (skips auto-detect entirely):
+    python ocr_soap_64.py --batch-size 256
+
+  Resumable: if soap_64_resume.pt and soap_64_best.pt both exist in the
+  output dir, the run picks up from that epoch automatically. Delete both
+  files to force a clean restart from scratch.
+
+  Stopping conditions (whichever comes first): PATIENCE (20 epochs with no
+  val-accuracy improvement) or WALL_CLOCK_LIMIT_S (10 hours). There is no
+  fixed epoch cap — SCHEDULE_EPOCH_ESTIMATE only shapes the cosine LR curve.
 
 OPTIMIZER — SOAP (Shampoo + Adam, Kronecker-factored second-order):
   lr=1e-3, betas=(0.95, 0.95), weight_decay=5e-4
@@ -26,14 +43,15 @@ OPTIMIZER — SOAP (Shampoo + Adam, Kronecker-factored second-order):
   PATIENCE=20
   Standard first-order backward — no create_graph needed.
   AMP disabled — Kronecker eigendecomposition requires float32.
-  256×256 viability TBD — standard backward gives it the best chance after Lion.
 
-Augmentation: rotation ±5°, affine, perspective, blur+noise
+Augmentation: random affine (±5° rotation, translate, scale), perspective, Gaussian blur
 
-Hardware target:
+Hardware (confirmed 2026-07-09):
     AMD Ryzen 9 7900X  (24 threads)
     64 GB DDR5-5600
-    RTX 4080 16 GB  — batch TBD (auto-detected, candidates 512→256→128→64)
+    RTX 4080 16 GB  — batch=512 auto-detected, 9.5/12.9GB VRAM, 61–66°C
+    Completed: 99.65% test accuracy (100.00% best val), 107 epochs,
+    stopped by patience (20) — not wall clock
 
 Output: E:\\CSC-114\\project\\pytorch_soap_64\\
 """
@@ -46,6 +64,7 @@ import time
 import datetime
 import subprocess
 import math
+import argparse
 
 import torch
 import torch.nn as nn
@@ -408,7 +427,11 @@ def get_loaders(img_size, batch_size):
 
 # ── Batch size probe ──────────────────────────────────────────────────────────
 def try_batch_size(img_size):
-    """Standard backward probe — SOAP uses first-order gradients only."""
+    """Probe candidate batch sizes with a dummy forward+backward pass.
+    SOAP uses first-order gradients only, so no create_graph is needed here.
+    Also cross-checks nvidia-smi memory.used to catch Windows shared-VRAM
+    spillover that torch's own allocator stats can miss.
+    """
     for bs in [512, 256, 128, 64]:
         try:
             torch.cuda.empty_cache()
@@ -522,6 +545,11 @@ def plot_curves(log_path, out_path):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    _parser = argparse.ArgumentParser()
+    _parser.add_argument('--batch-size', type=int, default=None,
+                         help='Override auto batch detection with a fixed batch size')
+    _args = _parser.parse_args()
+
     tee = _Tee(OUTPUT_DIR)
 
     print("=" * 60)
@@ -530,7 +558,11 @@ if __name__ == "__main__":
     print(f"  Output : {OUTPUT_DIR}")
     print("=" * 60)
 
-    batch_size = try_batch_size(IMG_SIZE)
+    if _args.batch_size is not None:
+        batch_size = _args.batch_size
+        print(f"  Batch size {batch_size} — override (skipping auto-detect)")
+    else:
+        batch_size = try_batch_size(IMG_SIZE)
     train_dl, val_dl, test_dl = get_loaders(IMG_SIZE, batch_size)
 
     total_steps = SCHEDULE_EPOCH_ESTIMATE * len(train_dl)

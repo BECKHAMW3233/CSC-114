@@ -1,8 +1,10 @@
 """
 mnist_adamw_128.py
 ==================
-MNIST OCR — OCRConvNetWide, Schedule-Free AdamW, 128×128
+Digit OCR — OCRConvNetWide, Schedule-Free AdamW, 128×128
 Pure PyTorch — Wider architecture with Squeeze-Excitation attention blocks.
+Base dataset is MNIST; optionally merged with supplementary digit sources
+(USPS, SVHN, ARDIS, etc.) via supplementary_data.py when available.
 
 Architecture — OCRConvNetWide:
   Filter progression: 32→128→256→512
@@ -39,10 +41,26 @@ OPTIMIZER — Schedule-Free AdamW:
       optimizer.eval() to update BatchNorm running stats at the averaged
       parameter point. Required per Schedule-Free docs for any BatchNorm model.
 
-Hardware target:
+Hardware (confirmed 2026-07-09):
     AMD Ryzen 9 7900X  (24 threads)
     64 GB DDR5-5600
-    RTX 4080 16 GB  — batch TBD (auto-detected)
+    RTX 4080 16 GB  — batch=128 override, 11.8/13.2GB VRAM peak, 59–71°C
+    Completed: 99.42% test accuracy, 42 epochs, ~10.2h
+    (stopped by 10-hour wall clock, not patience — still improving)
+
+Running this script:
+  Normal run (auto-detects batch size — tries 1024, 512, 256 in order):
+    python mnist_adamw_128.py
+
+  Force a specific batch size (skips auto-detect entirely):
+    python mnist_adamw_128.py --batch-size 256
+
+  Resumable: if v1_adamw_128_resume_128.pt and v1_adamw_128_best_128.pt both
+  exist in the output dir, the run picks up from that epoch automatically.
+  Delete both files to force a clean restart from scratch.
+
+  Stopping conditions (whichever comes first): PATIENCE (15 epochs with no
+  val-loss improvement) or a 10-hour wall-clock limit. There is no epoch cap.
 
 Output: E:\\CSC-114\\project\\adamw_128\\
 """
@@ -143,10 +161,7 @@ OUTPUT_ROOT      = Path(r"E:\CSC-114\project\adamw_128")
 
 LABEL_MAP = list("0123456789")
 
-# Resolutions trained automatically, in order, in a single run.
-# 32x32 runs first (fast, full convergence room), then 64x64.
-# Fully independent — no weights, optimizer state, or history carried
-# between resolutions. Each is a complete retrain from random init.
+# This script trains a single resolution (128x128) per run.
 RESOLUTIONS = [128]
 
 
@@ -287,10 +302,9 @@ def setup_device() -> torch.device:
 
 def get_transforms(img_size: int, augment: bool = False) -> transforms.Compose:
     """
-    v3: Same augmentation as v2 — rotation ±5°, shear 5°, blur.
-    Schedule-Free optimizer handles learning dynamics differently but
-    augmentation strategy is retained from v2 analysis.
-    v4: [0,1] normalization — Normalize(0.5, 0.5) removed.
+    Training augmentation: rotation ±5°, affine (translate/scale/shear 5°),
+    color jitter (contrast/brightness), and occasional Gaussian blur.
+    Images are scaled to [0,1] via ToTensor with no additional mean/std shift.
     """
     aug_transforms = [
         transforms.RandomRotation(degrees=5),
@@ -486,8 +500,8 @@ class SEResidualBlock(nn.Module):
 class OCRConvNetWide(nn.Module):
     """
     Wider OCR ConvNet with SE attention.
-    Input:  (batch, 1, 64, 64)
-    Output: (batch, 62)
+    Input:  (batch, 1, 128, 128)
+    Output: (batch, 10)
     Filter progression: 32→128→256→512
     """
     def __init__(self, num_classes: int = NUM_CLASSES):

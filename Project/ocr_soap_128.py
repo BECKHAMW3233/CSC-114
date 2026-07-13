@@ -1,8 +1,10 @@
 """
 ocr_soap_128.py
 ===============
-MNIST OCR — OCRConvNetTriple, SOAP optimizer, 128×128
+Digit OCR — OCRConvNetTriple, SOAP optimizer, 128×128
 Pure PyTorch — Triple-width channels + Multi-Scale feature pyramid fusion.
+Base dataset is MNIST; optionally merged with supplementary digit sources
+(USPS, SVHN, ARDIS, etc.) via supplementary_data.py when available.
 
 Architecture — OCRConvNetTriple:
   Channel progression: 96→192→384→768
@@ -10,9 +12,24 @@ Architecture — OCRConvNetTriple:
   Classifier head: 1344→1024→512→256→128→10 (5 layers, GELU)
   SE reduction: 16, drop_path=0.05, dropout=0.35 (first classifier layer)
   label_smoothing=0.05
-  ~4.6M parameters
+  ~7.6M parameters (7,573,482 actual)
 
 Install: pip install pytorch_optimizer psutil
+
+Usage:
+  Normal run (auto-detects batch size — tries 512, 256, 128, 64 in order):
+    python ocr_soap_128.py
+
+  Force a specific batch size (skips auto-detect entirely):
+    python ocr_soap_128.py --batch-size 256
+
+  Resumable: if soap_128_resume.pt and soap_128_best.pt both exist in the
+  output dir, the run picks up from that epoch automatically. Delete both
+  files to force a clean restart from scratch.
+
+  Stopping conditions (whichever comes first): PATIENCE (20 epochs with no
+  val-accuracy improvement) or WALL_CLOCK_LIMIT_S (10 hours). There is no
+  fixed epoch cap — SCHEDULE_EPOCH_ESTIMATE only shapes the cosine LR curve.
 
 OPTIMIZER — SOAP (Shampoo + Adam, Kronecker-factored second-order):
   lr=1e-3, betas=(0.95, 0.95), weight_decay=5e-4
@@ -29,14 +46,16 @@ OPTIMIZER — SOAP (Shampoo + Adam, Kronecker-factored second-order):
 
 Fix applied 2026-07-07: HAS_SUPPLEMENTARY was hardcoded False, preventing
 supplementary data from loading regardless of file presence. Fixed to use
-the same try/except import block as ocr_soap_64.py and ocr_soap_256.py.
+the same try/except import block as ocr_soap_64.py.
 
-Augmentation: rotation ±5°, affine, perspective, blur+noise
+Augmentation: random affine (±5° rotation, translate, scale), perspective, Gaussian blur
 
-Hardware target:
+Hardware (confirmed 2026-07-11):
     AMD Ryzen 9 7900X  (24 threads)
     64 GB DDR5-5600
-    RTX 4080 16 GB  — batch TBD (auto-detected, candidates 512→256→128→64)
+    RTX 4080 16 GB  — batch=128 override, 9.5/12.9GB VRAM, 62–67°C
+    Completed: 99.66% test accuracy (99.88% best val), 49 epochs,
+    stopped by patience (20) — not wall clock
 
 Output: E:\\CSC-114\\project\\pytorch_soap_128\\
 """
@@ -410,7 +429,11 @@ def get_loaders(img_size, batch_size):
 
 # ── Batch size probe ──────────────────────────────────────────────────────────
 def try_batch_size(img_size):
-    """Standard backward probe — SOAP uses first-order gradients only."""
+    """Probe candidate batch sizes with a dummy forward+backward pass.
+    SOAP uses first-order gradients only, so no create_graph is needed here.
+    Also cross-checks nvidia-smi memory.used to catch Windows shared-VRAM
+    spillover that torch's own allocator stats can miss.
+    """
     for bs in [512, 256, 128, 64]:
         try:
             torch.cuda.empty_cache()

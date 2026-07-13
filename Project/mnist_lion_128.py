@@ -1,8 +1,10 @@
 """
 mnist_lion_128.py
 =================
-MNIST OCR — OCRConvNet, Lion optimizer, 128×128
+Digit OCR — OCRConvNet, Lion optimizer, 128×128
 Pure PyTorch — Depthwise-separable ConvNet with residual connections.
+Base dataset is MNIST; optionally merged with supplementary digit sources
+(USPS, SVHN, ARDIS, etc.) via supplementary_data.py when available.
 
 Architecture — OCRConvNet:
   Filter progression: 32→64→128→256
@@ -35,10 +37,26 @@ SCHEDULER — CosineAnnealingLR (no restarts):
   Single smooth decay from LR to eta_min over all epochs.
   Pairs well with Lion's sign-based updates.
 
-Hardware target:
+Hardware (confirmed 2026-07-09):
     AMD Ryzen 9 7900X  (24 threads)
     64 GB DDR5-5600
-    RTX 4080 16 GB  — batch TBD (auto-detected)
+    RTX 4080 16 GB  — batch=128 override, 7.8/7.9GB VRAM peak, 60–67°C
+    Completed: 99.45% test accuracy, 104 epochs, ~10.07h
+    (stopped by 10-hour wall clock, not patience — was at 14/15)
+
+Running this script:
+  Normal run (auto-detects batch size — tries 1024, 512, 256 in order):
+    python mnist_lion_128.py
+
+  Force a specific batch size (skips auto-detect entirely):
+    python mnist_lion_128.py --batch-size 256
+
+  Resumable: if v1_lion_128_resume_128.pt and v1_lion_128_best_128.pt both
+  exist in the output dir, the run picks up from that epoch automatically.
+  Delete both files to force a clean restart from scratch.
+
+  Stopping conditions (whichever comes first): PATIENCE (15 epochs with no
+  val-loss improvement) or a 10-hour wall-clock limit. There is no epoch cap.
 
 Output: E:\\CSC-114\\project\\lion_128\\
 """
@@ -139,10 +157,7 @@ OUTPUT_ROOT      = Path(r"E:\CSC-114\project\lion_128")
 
 LABEL_MAP = list("0123456789")
 
-# Resolutions trained automatically, in order, in a single run.
-# 32x32 runs first (fast, full convergence room), then 64x64.
-# Fully independent — no weights, optimizer state, or history carried
-# between resolutions. Each is a complete retrain from random init.
+# This script trains a single resolution (128x128) per run.
 RESOLUTIONS = [128]
 
 
@@ -290,11 +305,9 @@ def setup_device() -> torch.device:
 
 def get_transforms(img_size: int, augment: bool = False) -> transforms.Compose:
     """
-    v3: Same augmentation as v2 — rotation ±5°, shear 3°.
-    Lion optimizer handles the learning dynamics differently but
-    augmentation strategy remains optimal from v2 analysis.
-    v4: [0,1] normalization — Normalize(0.5, 0.5) removed, ToTensor()
-        alone produces [0,1] which is now the target range.
+    Training augmentation: rotation ±5°, affine (translate/scale/shear 3°),
+    and contrast jitter. No Gaussian blur in this variant.
+    Images are scaled to [0,1] via ToTensor with no additional mean/std shift.
     """
     aug_transforms = [
         transforms.RandomRotation(degrees=5),
@@ -471,8 +484,8 @@ class ResidualBlock(nn.Module):
 class OCRConvNet(nn.Module):
     """
     OCR ConvNet — narrow architecture with depthwise separable convolutions.
-    Input:  (batch, 1, 64, 64)
-    Output: (batch, 62)
+    Input:  (batch, 1, 128, 128)
+    Output: (batch, 10)
     """
     def __init__(self, num_classes: int = NUM_CLASSES):
         super().__init__()

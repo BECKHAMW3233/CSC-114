@@ -1,8 +1,10 @@
 """
 mnist_sgd_128.py
 ================
-MNIST OCR — OCRConvNetTriple, SGD + Nesterov, 128×128
+Digit OCR — OCRConvNetTriple, SGD + Nesterov, 128×128
 Pure PyTorch — Triple-width channels + Multi-Scale feature pyramid fusion.
+Base dataset is MNIST; optionally merged with supplementary digit sources
+(USPS, SVHN, ARDIS, etc.) via supplementary_data.py when available.
 
 Architecture — OCRConvNetTriple:
   Filter progression:
@@ -13,8 +15,7 @@ Architecture — OCRConvNetTriple:
     Stage 4: 768→768
   Multi-scale fusion: concatenates pooled outputs from stages 2+3+4
     before the classifier (fused dim = 1920).
-  Classifier head: 1920→512→256→10
-  GELU activations in classifier
+  Classifier head: 1920→1024→512→256→128→10 (5 layers, GELU, BatchNorm)
   ~4.6M parameters
 
 Book references — Chollet & Watson, "Deep Learning with Python, 3rd Ed." (Manning 2025)
@@ -32,10 +33,26 @@ Watch point — non-monotonic resolution behavior:
   Per-class accuracy will be compared against the v4 baseline and sgd_64
   results.
 
-Hardware target:
+Hardware (confirmed 2026-07-10):
     AMD Ryzen 9 7900X  (24 threads)
     64 GB DDR5-5600
-    RTX 4080 16 GB  — batch TBD (auto-detected)
+    RTX 4080 16 GB  — batch=128 override, 11.7/14.4GB VRAM peak, 59–65°C
+    Completed: 98.86% test accuracy, 33 epochs, ~10.2h
+    (stopped by 10-hour wall clock, not patience — still improving)
+
+Running this script:
+  Normal run (auto-detects batch size — tries 1024, 512, 256 in order):
+    python mnist_sgd_128.py
+
+  Force a specific batch size (skips auto-detect entirely):
+    python mnist_sgd_128.py --batch-size 256
+
+  Resumable: if v1_sgd_128_resume_128.pt and v1_sgd_128_best_128.pt both
+  exist in the output dir, the run picks up from that epoch automatically.
+  Delete both files to force a clean restart from scratch.
+
+  Stopping conditions (whichever comes first): PATIENCE (20 epochs with no
+  val-loss improvement) or a 10-hour wall-clock limit. There is no epoch cap.
 
 Output: E:\\CSC-114\\project\\sgd_128\\
 """
@@ -126,10 +143,7 @@ OUTPUT_ROOT      = Path(r"E:\CSC-114\project\sgd_128")
 
 LABEL_MAP = list("0123456789")
 
-# Resolutions trained automatically, in order, in a single run.
-# 32x32 runs first (fast, full convergence room), then 64x64.
-# Fully independent — no weights, optimizer state, or history carried
-# between resolutions. Each is a complete retrain from random init.
+# This script trains a single resolution (128x128) per run.
 RESOLUTIONS = [128]
 
 
@@ -271,16 +285,10 @@ def setup_device() -> torch.device:
 
 def get_transforms(img_size: int, augment: bool = False) -> transforms.Compose:
     """
-    FIX v2: Rotation reduced from ±15° to ±5°, shear from 10° to 5°.
-    FIX v2: Added domain-shift augmentation — perspective distortion +
-    GaussianBlur + random sharpness adjustment.
-    v4: [0,1] normalization — Normalize(0.5, 0.5) removed.
-
-    Model 3's data diversity strategy (most aggressive of the three):
-    - Model 1: clean EMNIST only
-    - Model 2: clean + blur/noise
-    - Model 3: clean + blur/noise + perspective distortion + sharpness variation
-    This maximizes ensemble diversity at the data level.
+    Training augmentation: rotation ±5°, affine (translate/scale/shear 5°),
+    color jitter (contrast/brightness), random perspective distortion,
+    occasional Gaussian blur, and occasional sharpness adjustment.
+    Images are scaled to [0,1] via ToTensor with no additional mean/std shift.
     """
     aug_transforms = [
         transforms.RandomRotation(degrees=5),            # FIX: was 15, now 5
@@ -309,7 +317,7 @@ def get_transforms(img_size: int, augment: bool = False) -> transforms.Compose:
 
 
 def get_class_weights(dataset) -> torch.Tensor:
-    """Fixed v2: handles ConcatDataset correctly via supplementary_data."""
+    """Handles ConcatDataset correctly via supplementary_data."""
     print("[Dataset] Computing class weights for balanced sampling...")
     if HAS_SUPPLEMENTARY:
         from supplementary_data import _extract_targets
@@ -478,8 +486,8 @@ class BottleneckResidualBlock(nn.Module):
 class OCRConvNetTriple(nn.Module):
     """
     Triple-width OCR ConvNet with multi-scale feature fusion.
-    Input:  (batch, 1, 32, 32)
-    Output: (batch, 62)
+    Input:  (batch, 1, 128, 128)
+    Output: (batch, 10)
     """
     def __init__(self, num_classes: int = NUM_CLASSES):
         super().__init__()

@@ -1,8 +1,10 @@
 """
 mnist_lion_64.py
 ================
-MNIST OCR — OCRConvNet, Lion optimizer, 64×64
+Digit OCR — OCRConvNet, Lion optimizer, 64×64
 Pure PyTorch — Depthwise-separable ConvNet with residual connections.
+Base dataset is MNIST; optionally merged with supplementary digit sources
+(USPS, SVHN, ARDIS, etc.) via supplementary_data.py when available.
 
 Architecture — OCRConvNet:
   Filter progression: 32→64→128→256
@@ -40,6 +42,20 @@ Hardware (confirmed 2026-07-06):
     64 GB DDR5-5600
     RTX 4080 16 GB  — batch 1024 auto-detected, 14.0/14.4GB VRAM, 60–72°C
     Completed: 99.49% test accuracy, 143 epochs, ~3.7h
+
+Running this script:
+  Normal run (auto-detects batch size — tries 1024, 512, 256 in order):
+    python mnist_lion_64.py
+
+  Force a specific batch size (skips auto-detect entirely):
+    python mnist_lion_64.py --batch-size 1024
+
+  Resumable: if v1_lion_64_resume_64.pt and v1_lion_64_best_64.pt both
+  exist in the output dir, the run picks up from that epoch automatically.
+  Delete both files to force a clean restart from scratch.
+
+  Stopping conditions (whichever comes first): PATIENCE (15 epochs with no
+  val-loss improvement) or a 10-hour wall-clock limit. There is no epoch cap.
 
 Output: E:\\CSC-114\\project\\lion_64\\
 """
@@ -140,10 +156,7 @@ OUTPUT_ROOT      = Path(r"E:\CSC-114\project\lion_64")
 
 LABEL_MAP = list("0123456789")
 
-# Resolutions trained automatically, in order, in a single run.
-# 32x32 runs first (fast, full convergence room), then 64x64.
-# Fully independent — no weights, optimizer state, or history carried
-# between resolutions. Each is a complete retrain from random init.
+# This script trains a single resolution (64x64) per run.
 RESOLUTIONS = [64]
 
 
@@ -291,11 +304,9 @@ def setup_device() -> torch.device:
 
 def get_transforms(img_size: int, augment: bool = False) -> transforms.Compose:
     """
-    v3: Same augmentation as v2 — rotation ±5°, shear 3°.
-    Lion optimizer handles the learning dynamics differently but
-    augmentation strategy remains optimal from v2 analysis.
-    v4: [0,1] normalization — Normalize(0.5, 0.5) removed, ToTensor()
-        alone produces [0,1] which is now the target range.
+    Training augmentation: rotation ±5°, affine (translate/scale/shear 3°),
+    and contrast jitter. No Gaussian blur in this variant.
+    Images are scaled to [0,1] via ToTensor with no additional mean/std shift.
     """
     aug_transforms = [
         transforms.RandomRotation(degrees=5),
@@ -473,7 +484,7 @@ class OCRConvNet(nn.Module):
     """
     OCR ConvNet — narrow architecture with depthwise separable convolutions.
     Input:  (batch, 1, 64, 64)
-    Output: (batch, 62)
+    Output: (batch, 10)
     """
     def __init__(self, num_classes: int = NUM_CLASSES):
         super().__init__()
