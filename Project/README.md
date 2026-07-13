@@ -583,7 +583,7 @@ strongest result, ahead of AdamW (99.42%) and SGD (98.86%).
 
 ---
 
-## Real-World Testing — 8-Model Ensemble (2026-07-12)
+## Real-World Testing — 8-Model Ensemble (2026-07-12 → 2026-07-13)
 
 **Pipeline fix applied before this run:** `--model-dir` originally scanned
 recursively with no exclusions, which swept up the entire `venv/` tree —
@@ -712,9 +712,125 @@ answered by this run and needs a follow-up pass with hand-scored ground truth.
    for every other model) — is it a training issue (undertrained, needs a
    longer patience run) or a resolution mismatch in how Lion's optimizer
    settings were tuned for 128×128?
-3. Re-run including `test9.png` (see scope note above).
+3. Re-run including `test9.png` (see scope note above) — still outstanding
+   on both the home and school runs.
 4. Look at whether `get_boxes()`'s line-grouping thresholds need adjustment
    for the dense sheets (test21, test24, test22) specifically.
+
+---
+
+## Cross-Machine Reproduction (2026-07-13)
+
+The same 8-model ensemble and 14-image test set were re-run independently on
+a second, unrelated machine: an FTCC lab PC (Dell OptiPlex 7080, Intel
+Core i7-10700 @ 2.90GHz, 8 cores/16 threads, 32GB RAM, Windows 11 Enterprise
+LTSC), rather than the home RTX 4080 rig used for training. Inference ran on
+CPU/integrated graphics only — the discrete NVIDIA GPU on that machine sat
+at 3% utilization throughout, confirming `onnxruntime` fell back to CPU
+execution rather than CUDA.
+
+This is expected to reproduce cleanly: the ONNX exports are frozen weights,
+so the school run is a pure forward-pass replay of the same models, with no
+training or GPU-dependent randomness involved.
+
+**Result: identical output.** Every per-image detected-character count and
+consensus percentage from the school run matches the original home-hardware
+run exactly, across all 14 images (e.g., test21.jpg: 71 chars / 32.4%
+consensus on both machines; test23.jpg: 41 chars / 95.1% on both). Re-deriving
+average top-1 confidence per model from the school log's character-level
+detail also reproduces the `lion_128` outlier finding independently:
+`lion_128` averages 57.9% confidence across all 352 detected characters,
+versus 88–95% for every other model — the same ~30-point gap seen in the
+original run, on completely different hardware.
+
+**Confirms:** the `lion_128` generalization gap (Finding 1) and the
+consensus-vs-density pattern (Finding 3) are properties of the trained
+models and test images themselves, not artifacts of the home training
+machine or its environment. The school run still excluded `test9.png` for
+the same reason as the original (`test*.jpg` glob, `.png` not matched) —
+that gap is unresolved on both machines and remains open — see Action
+items in Real-World Testing above.
+
+---
+
+## What Happens When a Digit Doesn't Fit the Predefined Box (2026-07-13)
+
+Real handwriting doesn't arrive pre-cropped into neat, uniform boxes.
+`get_boxes()` (in `ocr_pipeline_mnist.py`) finds character regions by
+thresholding the image and taking each connected contour's bounding box,
+then filters those boxes by height, width, and aspect ratio before handing
+them to the models. A digit written unusually large, small, or with a stray
+connecting stroke touching it can fail that filter — and until this was
+found and fixed, the pipeline handled that failure silently: the character
+was just missing from the output, with no error, no warning, and no marker
+at all.
+
+**How this was found.** A test photo (`test50.jpg`, three handwritten rows:
+`6 0 3 7` / `1 8 4 5` / `9 2`) was run through the 8-model pipeline and came
+back reporting `Detected: 9 characters` instead of the true 10 — the second
+row read `184`, silently missing the `5`. Direct inspection of the contour
+data showed why: the `5` had a horizontal connecting stroke drawn through
+it, which fused into the same connected contour and pushed its bounding box
+to 141px wide against a 140.8px ceiling (the filter rejects anything wider
+than 25% of the image width, to catch full-width scan-line artifacts
+elsewhere in the same photo). The digit failed the width check by less
+than a pixel, and was discarded with no memory that it had ever existed.
+
+**What the literature says.** This is a known, named failure mode in OCR
+preprocessing — usually called underline or stray-stroke interference. The
+standard published fix detects long thin strokes with a wide horizontal
+morphological opening (`cv2.morphologyEx` + `MORPH_OPEN` with a kernel like
+`(25, 1)`) and erases them from the image before contour extraction. That
+approach was tested directly against this project's own images and not
+adopted: the stray stroke on the real `5` above was only ~45px long (~8% of
+the working image width), while the same photo also contains full-width
+scan artifacts running the image's entire ~560px width. A kernel wide
+enough to safely ignore those artifacts was too wide to ever catch a stroke
+that short, and a kernel narrow enough to catch it started eroding real
+digit strokes elsewhere in the same image.
+
+**The fix that was adopted** works in box-space instead of pixel-space.
+Contours that fail *only* the width filter (height and aspect ratio both
+still look like a real character) are kept in a separate pool instead of
+being discarded outright — capped at 2x the width ceiling, so an actual
+full-width scan artifact is never eligible. Each line is then checked for
+a gap in its character spacing that's much larger than that line's own
+normal spacing — between two existing characters, after the last one, or
+before the first one (a trailing dropped digit, like `1 8 4` missing a
+final `5`, produces no gap between existing boxes at all, so the line's
+leading and trailing edges have to be checked too, not just the space
+between pairs). If a wide-reject contour's position and height fit that
+gap, it's added back as a real character.
+
+**Confirmed working** against the real `test50.jpg` image: detected count
+went from 9 to 10, the recovered box (`x:346 y:306 w:141 h:98`) was
+extracted and visually confirmed to be the actual `5` with its connecting
+stroke, and 7 of 8 models correctly read it once given the chance — only
+`lion_128` misread it (as `3` at 53.4% confidence, well below every other
+model's ~90–96% on that same character), which lines up with the same
+`lion_128` generalization gap documented above rather than indicating a
+problem with the recovery itself. The final ensemble vote landed on `5` by
+majority, printed as `184[5]` — the `[...]` bracket marking a
+majority/weighted decision rather than unanimous agreement, per the
+`ENSEMBLE RESULT` legend.
+
+**What this does and doesn't fix.** The rescue pass only recovers a
+character rejected for width alone. It does not help a digit rejected for
+height or aspect ratio, and it does not help a digit whose vertical
+position gets it grouped into the wrong line entirely — both of those
+still fail exactly as before, silently, with the character simply absent
+and no marker to show it was ever there. Separately, if the ensemble
+detects a character but cannot agree on what digit it is, that's a
+different case entirely and prints as `??` (or `[NON-DIGIT?]` if every
+model's confidence was too low to trust at all) — `??` means "this
+position was detected and classified, the models just disagreed"; a
+character get_boxes() never turned into a box in the first place produces
+no marker whatsoever, because there is no output position for a marker to
+attach to. A reader going through pipeline output should keep both
+failure modes in mind: a suspiciously short line, or a `Detected: N
+characters` count that looks low for what's visibly on the page, is the
+signal to go check the source image directly rather than trust the count
+at face value.
 
 ---
 
