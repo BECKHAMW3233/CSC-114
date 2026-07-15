@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIGIT ENSEMBLE — CSC-114</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080a09;
+  --bg-1:#101312;
+  --bg-2:#161a19;
+  --line:#2a3230;
+  --line-hard:#3d4744;
+  --ink:#f2f4f1;
+  --ink-2:#9aa39e;
+  --ink-3:#5f6a65;
+
+  --lion:#e8483c;
+  --lion-128:#f2a03a;
+  --adamw:#3b82c4;
+  --adamw-128:#2dd4c4;
+  --sgd:#5fd968;
+  --sgd-128:#a8d642;
+  --soap:#a259c4;
+  --soap-128:#e05a9e;
+
+  --accent:#ff2d2d;
+  --accent-glow:rgba(255,45,45,0.3);
+
+  --disp:'Archivo Black', sans-serif;
+  --sans:'IBM Plex Sans', sans-serif;
+  --mono:'IBM Plex Mono', monospace;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--sans); line-height:1.6; font-size:16px;
+  -webkit-font-smoothing:antialiased;
+}
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
+::selection{background:var(--accent); color:#080a09;}
+
+.wrap{max-width:1440px; margin:0 auto; padding:0 48px;}
+@media (max-width:640px){ .wrap{padding:0 20px;} }
+@media (min-width:1920px){ .wrap{max-width:1600px; padding:0 64px;} }
+
+.grain{position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0.05; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- nav ---------- */
+nav{position:sticky; top:0; z-index:50; background:rgba(8,10,9,0.9); backdrop-filter:blur(10px); border-bottom:2px solid var(--line-hard);}
+nav .wrap{display:flex; align-items:center; justify-content:space-between; padding:16px 32px;}
+.brand{font-family:var(--disp); font-size:14px; letter-spacing:0.02em; display:flex; align-items:center; gap:10px; text-transform:uppercase;}
+.brand .chips{display:flex; gap:3px;}
+.brand .chips i{width:7px; height:16px; display:block;}
+.navlinks{display:flex; gap:0; font-family:var(--mono); font-size:12.5px; text-transform:uppercase; letter-spacing:0.04em;}
+.navlinks a{color:var(--ink-2); text-decoration:none; transition:color .12s; padding:8px 16px; border-left:1px solid var(--line);}
+.navlinks a:hover{color:var(--accent);}
+@media (max-width:760px){ .navlinks{display:none;} }
+
+/* ---------- hero ---------- */
+header.hero{padding:70px 0 0; position:relative; z-index:1; border-bottom:2px solid var(--line-hard);}
+.eyebrow{
+  font-family:var(--mono); font-size:12.5px; color:var(--ink-2);
+  text-transform:uppercase; letter-spacing:0.14em; margin-bottom:28px;
+  display:flex; align-items:center; gap:10px;
+}
+.eyebrow::before{content:''; width:22px; height:2px; background:var(--accent);}
+
+h1{
+  font-family:var(--disp); font-size:clamp(40px,6.5vw,104px);
+  line-height:0.94; margin:0 0 32px; letter-spacing:-0.01em; text-transform:uppercase;
+  max-width:1100px;
+}
+h1 .row{display:block;}
+h1 .glow{color:var(--accent); text-shadow:0 0 24px var(--accent-glow);}
+h1 .outline{color:transparent; -webkit-text-stroke:1.5px var(--ink); display:inline;}
+
+.sub{font-size:19px; color:var(--ink-2); max-width:600px; margin:0 0 48px; line-height:1.65;}
+.sub strong{color:var(--ink); font-weight:600;}
+
+/* ---------- vote strip (signature element) ---------- */
+.votebox{
+  border:2px solid var(--line-hard); background:var(--bg-1);
+  padding:0; margin-bottom:0; overflow:hidden;
+}
+.votebox-head{
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;
+  padding:16px 28px; border-bottom:2px solid var(--line-hard); background:var(--bg-2);
+}
+.votebox-head .vlabel{font-family:var(--mono); font-size:12px; color:var(--ink-2); text-transform:uppercase; letter-spacing:0.1em;}
+.votebox-head .vresult{font-family:var(--mono); font-size:14px; color:var(--ink-2);}
+.votebox-head .vresult b{color:var(--accent); font-weight:700;}
+
+.digitrow{display:flex; gap:0; margin:0;}
+.dcol{flex:1; display:flex; flex-direction:column; align-items:center; gap:0; border-right:1px solid var(--line);}
+.dcol:last-child{border-right:none;}
+.dcol .dchar{
+  font-family:var(--disp); font-size:44px; color:var(--ink);
+  width:100%; text-align:center; padding:30px 0 20px;
+}
+@media (min-width:1920px){ .dcol .dchar{font-size:56px; padding:38px 0 24px;} }
+.dcol.split .dchar{color:#ffb020; text-shadow:0 0 30px rgba(255,176,32,0.4);}
+.dcol .votes{display:flex; flex-direction:column; gap:2px; width:100%;}
+.dcol .votes-row{display:flex; gap:0; width:100%; height:9px;}
+.dcol .votes-row i{flex:1; background:var(--line);}
+.dcol .votes-row i.on.lion{background:var(--lion);}
+.dcol .votes-row i.on.adamw{background:var(--adamw);}
+.dcol .votes-row i.on.sgd{background:var(--sgd);}
+.dcol .votes-row i.on.soap{background:var(--soap);}
+.dcol .votes-row i.on.r128{box-shadow:inset 0 0 0 1px rgba(0,0,0,0.25);}
+.dcol .votes-row i.on.lion.r128{background:var(--lion-128); color:var(--lion-128);}
+.dcol .votes-row i.on.adamw.r128{background:var(--adamw-128); color:var(--adamw-128);}
+.dcol .votes-row i.on.sgd.r128{background:var(--sgd-128); color:var(--sgd-128);}
+.dcol .votes-row i.on.soap.r128{background:var(--soap-128); color:var(--soap-128);}
+
+.legend{display:flex; flex-wrap:wrap; font-family:var(--mono); font-size:11.5px; color:var(--ink-2); border-top:2px solid var(--line-hard);}
+.legend span{display:inline-flex; align-items:center; gap:8px; padding:14px 20px; border-right:1px solid var(--line); text-transform:uppercase; letter-spacing:0.03em; flex:1 1 25%; box-sizing:border-box; min-width:150px;}
+.legend i{width:10px; height:10px; display:inline-block;}
+
+.metaline{
+  display:flex; flex-wrap:wrap; font-family:var(--mono); font-size:12.5px; color:var(--ink-2);
+  margin:0 0 0; border-top:2px solid var(--line-hard);
+}
+.metaline span{padding:16px 28px; border-right:1px solid var(--line);}
+.metaline span b{color:var(--ink); font-weight:600;}
+@media(max-width:640px){ .metaline span{padding:14px 16px; border-right:none; border-bottom:1px solid var(--line); width:100%;} }
+
+/* ---------- sections ---------- */
+section{padding:80px 0; border-top:2px solid var(--line-hard); position:relative; z-index:1;}
+@media (min-width:1920px){ section{padding:110px 0;} }
+.kicker{
+  font-family:var(--mono); font-size:12.5px; color:var(--ink-2); text-transform:uppercase; letter-spacing:0.14em; margin-bottom:16px;
+  display:flex; align-items:center; gap:10px;
+}
+.kicker::before{content:''; width:22px; height:2px; background:var(--accent);}
+h2{font-family:var(--disp); font-size:clamp(28px,3.4vw,52px); margin:0 0 24px; letter-spacing:-0.01em; max-width:780px; text-transform:uppercase; line-height:1.02;}
+.lead{color:var(--ink-2); max-width:640px; margin-bottom:48px; font-size:16.5px; line-height:1.75;}
+
+/* finding rows — asymmetric, huge numerals bleeding left */
+.findings{display:flex; flex-direction:column; gap:0;}
+.finding{
+  display:grid; grid-template-columns:110px 1fr; gap:28px; padding:32px 0;
+  border-top:2px solid var(--line);
+}
+.finding:first-child{border-top:none;}
+.finding .fnum{font-family:var(--disp); font-size:56px; color:var(--line-hard); line-height:0.8; -webkit-text-stroke:0;}
+.finding h4{font-family:var(--sans); font-weight:700; font-size:18px; margin:0 0 10px; color:var(--ink); text-transform:none;}
+.finding p{font-size:14.5px; color:var(--ink-2); margin:0; max-width:640px; line-height:1.7;}
+.finding em{color:var(--accent); font-style:normal; font-weight:600;}
+
+/* definition panel — distinct from findings, explanatory not empirical */
+.defpanel{border:2px solid var(--soap); margin-top:8px; background:var(--bg-1);}
+.defpanel-head{display:flex; align-items:center; gap:16px; padding:22px 26px; border-bottom:2px solid var(--line-hard); background:rgba(230,59,255,0.06);}
+.deftag{font-family:var(--mono); font-size:11px; color:var(--soap); text-transform:uppercase; letter-spacing:0.1em; border:1px solid var(--soap); padding:4px 10px; flex-shrink:0;}
+.defpanel-head h4{font-family:var(--sans); font-weight:700; font-size:17px; margin:0; color:var(--ink);}
+.defpanel-body{padding:26px;}
+.defpanel-body p{font-size:14.5px; color:var(--ink-2); line-height:1.75; margin:0 0 18px;}
+.defpanel-body p:last-child{margin-bottom:0;}
+.defpanel-body strong{color:var(--ink); font-weight:600;}
+.defpanel-body code{font-family:var(--mono); background:var(--bg-2); padding:2px 7px; border:1px solid var(--line); color:var(--accent); font-size:0.92em;}
+.defpanel-verdict{padding-top:18px; border-top:1px solid var(--line); color:var(--ink) !important; font-weight:500;}
+
+/* dropped optimizer callout — amber, distinct from the model filmstrip's confirmed lineup */
+.droppanel{border:2px solid #ffb020; margin-top:40px; background:var(--bg-1);}
+.droppanel-head{display:flex; align-items:center; gap:16px; padding:22px 26px; border-bottom:2px solid var(--line-hard); background:rgba(255,176,32,0.06); flex-wrap:wrap;}
+.droptag{font-family:var(--mono); font-size:11px; color:#ffb020; text-transform:uppercase; letter-spacing:0.1em; border:1px solid #ffb020; padding:4px 10px; flex-shrink:0;}
+.droppanel-head h4{font-family:var(--sans); font-weight:700; font-size:17px; margin:0; color:var(--ink);}
+.droppanel-body{padding:26px;}
+.droppanel-body p{font-size:14.5px; color:var(--ink-2); line-height:1.75; margin:0 0 18px;}
+.droppanel-body p:last-child{margin-bottom:0;}
+.droppanel-body strong{color:var(--ink); font-weight:600;}
+.droppanel-body code{font-family:var(--mono); background:var(--bg-2); padding:2px 7px; border:1px solid var(--line); color:#ffb020; font-size:0.92em;}
+
+.timecompare{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:0; border:1px solid var(--line); margin:0 0 20px;}
+.timecompare .tc{padding:16px 18px; border-left:1px solid var(--line);}
+.timecompare .tc:first-child{border-left:none;}
+.timecompare .tc .tclabel{font-family:var(--mono); font-size:10.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;}
+.timecompare .tc .tcval{font-family:var(--disp); font-size:22px; color:var(--ink);}
+.timecompare .tc.worst .tcval{color:#ffb020;}
+@media (max-width:640px){ .timecompare{grid-template-columns:1fr 1fr;} .timecompare .tc{border-left:none; border-top:1px solid var(--line);} .timecompare .tc:nth-child(-n+2){border-top:none;} }
+
+/* model filmstrip */
+.filmstrip{display:flex; flex-direction:column; gap:0; border:2px solid var(--line-hard);}
+.mrow{
+  display:grid; grid-template-columns:10px 210px 1fr 170px; align-items:stretch;
+  background:var(--bg-1); gap:0; position:relative;
+}
+@media (min-width:1920px){ .mrow{grid-template-columns:12px 260px 1fr 210px;} }
+.mrow + .mrow{border-top:2px solid var(--line-hard);}
+.mrow .bar{background:var(--line);}
+.mrow.lion .bar{background:var(--lion);}
+.mrow.adamw .bar{background:var(--adamw);}
+.mrow.sgd .bar{background:var(--sgd);}
+.mrow.soap .bar{background:var(--soap);}
+.mrow .mname{font-family:var(--disp); font-size:22px; padding:26px 20px 26px 24px; text-transform:uppercase; display:flex; flex-direction:column; justify-content:center;}
+.mrow .mname small{display:block; font-family:var(--mono); font-weight:400; font-size:11px; color:var(--ink-3); margin-top:8px; text-transform:none; letter-spacing:0;}
+.mrow .mdesc{font-size:14px; color:var(--ink-2); line-height:1.6; padding:26px 24px 26px 0; display:flex; align-items:center; border-left:1px solid var(--line);}
+.mrow .mstats{text-align:right; font-family:var(--mono); font-size:12px; color:var(--ink-3); padding:26px 26px; border-left:1px solid var(--line); display:flex; flex-direction:column; justify-content:center;}
+.mrow .mstats .acc{display:block; font-size:26px; font-weight:700; color:var(--ink); margin-bottom:4px; font-family:var(--disp);}
+@media (min-width:1920px){
+  .mrow .mname{font-size:26px; padding:32px 26px 32px 30px;}
+  .mrow .mname small{font-size:12.5px;}
+  .mrow .mdesc{font-size:15.5px; padding:32px 30px 32px 0;}
+  .mrow .mstats{font-size:13px; padding:32px 32px;}
+  .mrow .mstats .acc{font-size:30px;}
+}
+@media (max-width:860px){
+  .mrow{grid-template-columns:8px 1fr; grid-template-areas:"bar name" "bar desc" "bar stats"; row-gap:0;}
+  .mrow .bar{grid-area:bar;} .mrow .mname{grid-area:name; padding:20px 20px 10px;} .mrow .mdesc{grid-area:desc; border-left:none; padding:0 20px 16px;} .mrow .mstats{grid-area:stats; text-align:left; border-left:none; border-top:1px solid var(--line); padding:14px 20px;}
+}
+
+/* architecture cards */
+.archgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:0; border:2px solid var(--line-hard); margin-top:32px;}
+@media (max-width:780px){ .archgrid{grid-template-columns:1fr;} }
+.archcard{background:var(--bg-1); padding:28px 26px; border-left:2px solid var(--line-hard);}
+.archcard:first-child{border-left:none;}
+@media (max-width:780px){ .archcard{border-left:none; border-top:2px solid var(--line-hard);} .archcard:first-child{border-top:none;} }
+.archcard .aparams{font-family:var(--mono); font-size:11.5px; color:var(--accent); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.08em;}
+.archcard .aprov{font-family:var(--mono); font-size:11px; color:var(--ink-3); margin-bottom:14px; letter-spacing:0.01em;}
+.archcard h4{font-family:var(--disp); font-size:19px; margin:0 0 12px; text-transform:uppercase;}
+.archcard p{font-size:13.5px; color:var(--ink-2); margin:0; line-height:1.65;}
+
+/* table */
+.tablewrap{border:2px solid var(--line-hard); margin-top:8px;}
+.scroll-x{overflow-x:auto;}
+table{width:100%; border-collapse:collapse; font-size:14px; min-width:760px;}
+th{text-align:left; font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-2); padding:16px 20px; background:var(--bg-2); border-bottom:2px solid var(--line-hard);}
+td{padding:16px 20px; border-bottom:1px solid var(--line); font-size:13.5px; color:var(--ink-2); font-family:var(--mono);}
+@media (min-width:1920px){
+  table{font-size:16px;}
+  th{font-size:12.5px; padding:20px 24px;}
+  td{font-size:15px; padding:20px 24px;}
+}
+tr:last-child td{border-bottom:none;}
+td.mname-cell{font-weight:700; color:var(--ink); display:flex; align-items:center; gap:10px; font-family:var(--sans); text-transform:uppercase; font-size:13px; letter-spacing:0.02em;}
+td.mname-cell i{width:9px; height:9px; flex-shrink:0;}
+td.acc-cell{color:var(--ink); font-weight:600;}
+td.best{color:var(--accent); font-weight:700;}
+.footnote{font-size:13.5px; color:var(--ink-3); margin-top:22px; line-height:1.7;}
+.footnote strong{color:var(--ink-2);}
+
+/* pipeline flow */
+.flow{display:grid; grid-template-columns:repeat(4,1fr); gap:0; margin-top:8px; position:relative; border:2px solid var(--line-hard);}
+@media (max-width:780px){ .flow{grid-template-columns:1fr;} }
+.fstep{padding:28px 26px; position:relative; border-left:2px solid var(--line-hard);}
+.fstep:first-child{border-left:none;}
+@media (max-width:780px){ .fstep{border-left:none; border-top:2px solid var(--line-hard);} .fstep:first-child{border-top:none;} }
+.fstep .fnum{font-family:var(--mono); font-size:11.5px; color:var(--accent); margin-bottom:12px; letter-spacing:0.06em;}
+.fstep h4{font-family:var(--sans); font-weight:700; font-size:15.5px; margin:0 0 10px; text-transform:uppercase; letter-spacing:0.01em;}
+.fstep p{font-size:13px; color:var(--ink-2); margin:0; line-height:1.6;}
+
+.markers{display:flex; gap:0; margin-top:0; flex-wrap:wrap; border:2px solid var(--line-hard); border-top:none;}
+.marker{flex:1 1 280px; padding:22px 24px; background:var(--bg-1); border-left:1px solid var(--line);}
+.marker:first-child{border-left:none;}
+.marker .mk{font-family:var(--mono); font-weight:700; font-size:16px; display:inline-block; margin-bottom:10px; padding:4px 10px;}
+.mk.q{color:#ffb020; background:rgba(255,176,32,0.1); border:1px solid rgba(255,176,32,0.3);}
+.mk.nd{color:#ff3860; background:rgba(255,56,96,0.1); border:1px solid rgba(255,56,96,0.3);}
+.marker p{margin:0; font-size:13.5px; color:var(--ink-2); line-height:1.6;}
+
+footer{padding:56px 0 70px; text-align:center; border-top:2px solid var(--line-hard);}
+footer p{font-family:var(--mono); font-size:12px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.06em;}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<nav>
+  <div class="wrap">
+    <div class="brand">
+      <span class="chips"><i style="background:var(--lion)"></i><i style="background:var(--adamw)"></i><i style="background:var(--sgd)"></i><i style="background:var(--soap)"></i></span>
+      Digit Ensemble
+    </div>
+    <div class="navlinks">
+      <a href="#why">Why digits-only</a>
+      <a href="#models">Models</a>
+      <a href="#pipeline">How it reads</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">CSC-114 · AI Fundamentals I · Final Project</div>
+    <h1><span class="row">Four optimizers.</span><span class="row">One <span class="glow">digit.</span></span><span class="row"><span class="outline">Watch them vote.</span></span></h1>
+    <p class="sub">
+      Eight CNNs — trained with four different optimizers at two resolutions — each read
+      every digit in an image independently. Most of the time they agree instantly.
+      When they don't, that disagreement is the interesting part.
+    </p>
+  </div>
+
+  <div class="wrap" style="padding-bottom:0;">
+    <div class="votebox">
+      <div class="votebox-head">
+        <span class="vlabel">Example ensemble read — ground truth: 50368 — 8 models voting per digit</span>
+        <span class="vresult">4 / 5 correct <b>(80%)</b></span>
+      </div>
+      <div class="digitrow">
+        <div class="dcol">
+          <div class="dchar">5</div>
+          <div class="votes">
+            <div class="votes-row"><i class="on lion"></i><i class="on adamw"></i><i class="on sgd"></i><i class="on soap"></i></div>
+            <div class="votes-row"><i class="on lion r128"></i><i class="on adamw r128"></i><i class="on sgd r128"></i><i class="on soap r128"></i></div>
+          </div>
+        </div>
+        <div class="dcol">
+          <div class="dchar">0</div>
+          <div class="votes">
+            <div class="votes-row"><i class="on lion"></i><i class="on adamw"></i><i class="on sgd"></i><i class="on soap"></i></div>
+            <div class="votes-row"><i class="on lion r128"></i><i class="on adamw r128"></i><i class="on sgd r128"></i><i class="on soap r128"></i></div>
+          </div>
+        </div>
+        <div class="dcol">
+          <div class="dchar">3</div>
+          <div class="votes">
+            <div class="votes-row"><i class="on lion"></i><i class="on adamw"></i><i class="on sgd"></i><i class="on soap"></i></div>
+            <div class="votes-row"><i class="on lion r128"></i><i class="on adamw r128"></i><i class="on sgd r128"></i><i class="on soap r128"></i></div>
+          </div>
+        </div>
+        <div class="dcol split">
+          <div class="dchar">??</div>
+          <div class="votes">
+            <div class="votes-row"><i class="on lion"></i><i class="on adamw"></i><i class="on sgd"></i><i class="on soap"></i></div>
+            <div class="votes-row"><i class="on lion r128"></i><i class="on adamw r128"></i><i class="on sgd r128"></i><i class="on soap r128"></i></div>
+          </div>
+        </div>
+        <div class="dcol">
+          <div class="dchar">8</div>
+          <div class="votes">
+            <div class="votes-row"><i class="on lion"></i><i class="on adamw"></i><i class="on sgd"></i><i class="on soap"></i></div>
+            <div class="votes-row"><i class="on lion r128"></i><i class="on adamw r128"></i><i class="on sgd r128"></i><i class="on soap r128"></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--lion)"></i>Lion 64×64</span>
+        <span><i style="background:var(--adamw)"></i>AdamW 64×64</span>
+        <span><i style="background:var(--sgd)"></i>SGD 64×64</span>
+        <span><i style="background:var(--soap)"></i>SOAP 64×64</span>
+        <span><i style="background:var(--lion-128)"></i>Lion 128×128</span>
+        <span><i style="background:var(--adamw-128)"></i>AdamW 128×128</span>
+        <span><i style="background:var(--sgd-128)"></i>SGD 128×128</span>
+        <span><i style="background:var(--soap-128)"></i>SOAP 128×128</span>
+      </div>
+    </div>
+    <p style="font-family:var(--mono); font-size:11px; color:var(--ink-3); margin:14px 0 0; line-height:1.6;">
+      Illustrative example — the digits and the <span style="color:#ffb020;">??</span> split shown here demonstrate how the vote works. A real disagreement like this hasn't been captured in a test run yet; see the pipeline section below.
+    </p>
+    <div class="metaline">
+      <span>Author <b>William Edward Beckham III</b></span>
+      <span>Hardware <b>RTX 4080 16GB · Ryzen 9 7900X</b></span>
+      <span>Best single model <b>SOAP 128×128 — 99.66%</b></span>
+    </div>
+  </div>
+</header>
+
+<section id="why">
+  <div class="wrap">
+    <div class="kicker">The pivot</div>
+    <h2>Why this project only reads digits</h2>
+    <p class="lead">
+      This is a deliberate narrowing from an earlier 62-class letters+digits ensemble.
+      Four specific findings from that project's own per-class accuracy data are why.
+    </p>
+
+    <div class="findings">
+      <div class="finding">
+        <div class="fnum">01</div>
+        <div>
+          <h4>The lowercase ambiguity cluster was structural, not fixable</h4>
+          <p>Letters like o, s, c, u, l, f scored <em>0–28%</em> across all six prior distilled models. That's a resolution and stroke-endpoint problem, not something more training solves.</p>
+        </div>
+      </div>
+      <div class="finding">
+        <div class="fnum">02</div>
+        <div>
+          <h4>SGD broke the "higher resolution helps" assumption</h4>
+          <p>One model scored worse at 64×64 than at 32×32 — the only model in the prior ensemble where that happened. This project's SGD runs test whether that's an SGD trait or a 62-class artifact.</p>
+        </div>
+      </div>
+      <div class="finding">
+        <div class="fnum">03</div>
+        <div>
+          <h4>Distillation hurt real-world generalization</h4>
+          <p>Models distilled on clean EMNIST overfit to that distribution and read messy real handwriting worse than their un-distilled base versions did.</p>
+        </div>
+      </div>
+      <div class="finding">
+        <div class="fnum">04</div>
+        <div>
+          <h4>Digits were competing against letters for accuracy</h4>
+          <p>7↔9 and 8↔9 confusion sat near <em>90%</em> in the combined ensemble. Removing letters removes that competing objective entirely.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="defpanel">
+      <div class="defpanel-head">
+        <span class="deftag">Term</span>
+        <h4>What "distillation" means here — and why none of these 8 models use it</h4>
+      </div>
+      <div class="defpanel-body">
+        <p>
+          Distillation trains a smaller <strong>student</strong> model to copy the outputs of a
+          larger, already-trained <strong>teacher</strong> model, instead of training the student
+          straight from labeled data. It's normally a way to shrink a model while keeping most of
+          its accuracy. The prior 62-class project ran this step; this project doesn't.
+        </p>
+        <p>
+          The prior project's distillation set was <strong>clean EMNIST byclass only</strong> —
+          697,932 samples, one narrow source. Distilled models overfit to that clean distribution
+          and read messy real-world handwriting <em>worse</em> than their own un-distilled base
+          versions. Distilling class <code>o</code> even made it worse outright — 49.4% base
+          → 0.2% distilled at 32×32.
+        </p>
+        <p class="defpanel-verdict">No distillation phase runs in this project until dataset selection is resolved — every one of the 8 ONNX exports here is a base model, trained directly on the full 439,148-sample five-source dataset, not a compressed copy of one.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="models">
+  <div class="wrap">
+    <div class="kicker">The ensemble</div>
+    <h2>Eight models, four optimizers, two resolutions</h2>
+    <p class="lead">
+      Same ten digit classes every time. What changes is the update rule, the architecture
+      it's paired with, and the input size — each combination trained and exported independently.
+    </p>
+
+    <div class="filmstrip">
+      <div class="mrow lion">
+        <div class="bar"></div>
+        <div class="mname">Lion<small>Evolved Sign Momentum · Chen et al. (Google), Feb 2023</small></div>
+        <div class="mdesc">Uses the sign of a gradient interpolation instead of adaptive per-parameter rates. Converges to smoother minima than Adam — generally better real-world generalization, and lighter on memory since it only stores one momentum buffer.</div>
+        <div class="mstats"><span class="acc">99.49%</span>64×64 · 143 epochs</div>
+      </div>
+      <div class="mrow adamw">
+        <div class="bar"></div>
+        <div class="mname">AdamW<small>Schedule-Free · Defazio et al. (Meta), May 2024</small></div>
+        <div class="mdesc">Schedule-Free AdamW eliminates learning-rate scheduler tuning entirely. Paired with Squeeze-Excitation channel attention (Hu, Shen &amp; Sun, 2017), which learns to amplify the feature detectors that matter most for each individual input.</div>
+        <div class="mstats"><span class="acc">99.46%</span>64×64 · 119 epochs</div>
+      </div>
+      <div class="mrow sgd">
+        <div class="bar"></div>
+        <div class="mname">SGD<small>+ Nesterov momentum · Nesterov, 1983</small></div>
+        <div class="mdesc">The classic optimizer, paired with a feature-pyramid architecture. Slowest to start — 84.97% after epoch 1 vs Lion's 94.41% — but the one whose resolution behavior this project is specifically built to interrogate.</div>
+        <div class="mstats"><span class="acc">99.49%</span>64×64 · 104 epochs</div>
+      </div>
+      <div class="mrow soap">
+        <div class="bar"></div>
+        <div class="mname">SOAP<small>Shampoo + Adam hybrid · Vyas et al., Sept 2024</small></div>
+        <div class="mdesc">A Kronecker-factored second-order optimizer that approximates the full curvature matrix per weight tensor. Best-performing model in the entire ensemble at both resolutions.</div>
+        <div class="mstats"><span class="acc">99.66%</span>128×128 · 49 epochs</div>
+      </div>
+    </div>
+
+    <div class="archgrid">
+      <div class="archcard">
+        <div class="aparams">2.46M params</div>
+        <div class="aprov">Depthwise-separable convs — Howard et al. (MobileNets), 2017</div>
+        <h4>OCRConvNet</h4>
+        <p>Narrow, depthwise-separable convolutions split spatial and cross-channel learning into two cheaper operations — the smallest memory footprint of the three architectures.</p>
+      </div>
+      <div class="archcard">
+        <div class="aparams">9.71M params</div>
+        <div class="aprov">SE attention — Hu, Shen &amp; Sun, 2017</div>
+        <h4>OCRConvNetWide</h4>
+        <p>Adds Squeeze-Excitation blocks after each stage for per-channel feature recalibration — the largest parameter count, built for handling structurally ambiguous classes.</p>
+      </div>
+      <div class="archcard">
+        <div class="aparams">4.58M params (SGD) · 7.57M params (SOAP)</div>
+        <div class="aprov">Feature Pyramid Network — Lin et al., 2017</div>
+        <h4>OCRConvNetTriple</h4>
+        <p>Fuses pooled features from three stages before classifying, so the model sees stroke geometry, part structure, and whole-digit identity all at once. SGD and SOAP each instantiate a different-sized version of this architecture — same design, different capacity.</p>
+      </div>
+    </div>
+
+    <div class="droppanel">
+      <div class="droppanel-head">
+        <span class="droptag">Tried &amp; dropped</span>
+        <h4>A 5th optimizer — AdaHessian — couldn't clear both resolutions, so it didn't ship</h4>
+      </div>
+      <div class="droppanel-body">
+        <p>
+          Standing rule for this ensemble: <strong>a model only ships if both its 64×64 and
+          128×128 versions can be trained effectively</strong> — that's the whole premise of
+          the resolution comparison below. <strong>AdaHessian</strong>, a second-order optimizer
+          that estimates loss curvature (via a Hutchinson Hessian approximation) instead of
+          just gradient direction, actually reached <strong>99.53% test accuracy at 64×64</strong> —
+          competitive with, and slightly ahead of, both Lion and AdamW. But its 128×128 run
+          couldn't clear the bar, so the whole optimizer was cut — not just the resolution that failed.
+        </p>
+        <div class="timecompare">
+          <div class="tc">
+            <div class="tclabel">Lion 64×64 (fastest)</div>
+            <div class="tcval">~1m 34s /ep</div>
+          </div>
+          <div class="tc worst">
+            <div class="tclabel">AdaHessian 64×64</div>
+            <div class="tcval">~18m 42s /ep</div>
+          </div>
+          <div class="tc worst">
+            <div class="tclabel">AdaHessian 128×128</div>
+            <div class="tcval">~74–75m /ep</div>
+          </div>
+        </div>
+        <p>
+          Computing the Hessian estimate requires a second backward pass through the network
+          on every step — roughly doubling (or worse) the cost of a normal training step. At
+          128×128 that meant a single epoch took over an hour; the 10-hour wall-clock cap every
+          other model trains under would only fit <strong>~8 epochs</strong> of AdaHessian at
+          that resolution — every other model's 128×128 run got 33 to 107 epochs, so 8 isn't
+          enough to trust the result. It also needed a smaller batch size than every other
+          model to avoid running out of VRAM — <code>512 → 256</code> at 64×64 after an
+          out-of-memory failure, and a hardcoded override down to <code>64</code> at 128×128.
+        </p>
+        <p class="defpanel-verdict" style="color:var(--ink) !important; border-top:1px solid var(--line); padding-top:18px;">
+          Verdict: 64×64 alone was good enough to include — but it doesn't ship without a
+          working 128×128 counterpart, and 128×128 wasn't trainable in the same conditions
+          every other model was held to.
+        </p>
+      </div>
+    </div>
+
+    <h2 style="margin-top:72px;">Why every model trained at two resolutions</h2>
+    <p class="lead">
+      64×64 and 128×128 aren't just "more pixels for luck" — this project runs every
+      optimizer through both as a controlled experiment, because the prior 62-class
+      ensemble found resolution doesn't affect every optimizer the same way.
+    </p>
+
+    <div class="findings" style="margin-bottom:48px;">
+      <div class="finding">
+        <div class="fnum" style="color:var(--accent); -webkit-text-stroke:0;">→</div>
+        <div>
+          <h4>SGD's two resolutions are a specific hypothesis test</h4>
+          <p>The prior ensemble found one model — SGD-optimized — actually scored <em>worse</em> at 64×64 (76.93%) than at 32×32 (78.62%), the only optimizer where higher resolution hurt. This project reruns SGD at 64×64 and 128×128 specifically to see if that inversion is an SGD trait or was an artifact of the old 62-class problem.</p>
+        </div>
+      </div>
+      <div class="finding">
+        <div class="fnum" style="color:var(--accent); -webkit-text-stroke:0;">✓</div>
+        <div>
+          <h4>The inversion reproduced</h4>
+          <p>SGD 64×64 hit 99.49% — matching Lion exactly. SGD 128×128 came in lower, at 98.86%. The same resolution drop showed up again on a clean 10-class problem, which points toward it being a real SGD behavior rather than a 62-class artifact.</p>
+        </div>
+      </div>
+      <div class="finding">
+        <div class="fnum">×2</div>
+        <div>
+          <h4>Every other optimizer ran the same 64/128 pair for comparison</h4>
+          <p>Lion, AdamW, and SOAP all trained at both resolutions too — not because their behavior was in question, but so SGD's result has a baseline. Lion and AdamW both improved or held steady moving to 128×128; only SGD dropped, which is what makes the SGD finding a real contrast instead of noise.</p>
+        </div>
+      </div>
+    </div>
+
+    <h2>Full results</h2>
+    <div class="tablewrap scroll-x">
+      <table>
+        <thead>
+          <tr><th>Model</th><th>Resolution</th><th>Test acc.</th><th>Epochs</th><th>Avg / epoch</th><th>Wall clock</th><th>Stop reason</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mname-cell"><i style="background:var(--lion)"></i>Lion</td><td>64×64</td><td class="acc-cell">99.49%</td><td>143</td><td>1m 34s</td><td>3.76h</td><td>patience</td></tr>
+          <tr><td class="mname-cell"><i style="background:var(--lion-128)"></i>Lion</td><td>128×128</td><td class="acc-cell">99.45%</td><td>104</td><td>5m 48s</td><td>10.07h</td><td class="best">wall-clock cap</td></tr>
+          <tr><td class="mname-cell"><i style="background:var(--adamw)"></i>AdamW</td><td>64×64</td><td class="acc-cell">99.46%</td><td>119</td><td>4m 09s</td><td>8.24h</td><td>patience</td></tr>
+          <tr><td class="mname-cell"><i style="background:var(--adamw-128)"></i>AdamW</td><td>128×128</td><td class="acc-cell">99.42%</td><td>42</td><td>14m 33s</td><td>10.19h</td><td class="best">wall-clock cap</td></tr>
+          <tr><td class="mname-cell"><i style="background:var(--sgd)"></i>SGD</td><td>64×64</td><td class="acc-cell">99.49%</td><td>104</td><td>4m 49s</td><td>8.35h</td><td>patience</td></tr>
+          <tr><td class="mname-cell"><i style="background:var(--sgd-128)"></i>SGD</td><td>128×128</td><td class="acc-cell">98.86%</td><td>33</td><td>18m 29s</td><td>10.17h</td><td class="best">wall-clock cap</td></tr>
+          <tr><td class="mname-cell"><i style="background:var(--soap)"></i>SOAP</td><td>64×64</td><td class="acc-cell">99.65%</td><td>107</td><td>2m 47s</td><td>4.96h</td><td>patience</td></tr>
+          <tr><td class="mname-cell"><i style="background:var(--soap-128)"></i>SOAP</td><td>128×128</td><td class="acc-cell" style="color:var(--accent)">99.66%</td><td>49</td><td>10m 37s</td><td>8.68h</td><td>patience</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="footnote">
+      Three of the eight runs — Lion 128, AdamW 128, SGD 128 — never triggered early stopping.
+      They were still improving when the script's <strong>10-hour wall-clock cap</strong> ended
+      the run at end-of-epoch. Total GPU time across the 8 shipped models: <strong>64.42 hours</strong>.
+      This excludes AdaHessian — the dropped 5th optimizer above logged real GPU time of its own,
+      but since it never made the ensemble, that time isn't counted here.
+    </p>
+  </div>
+</section>
+
+<section id="pipeline">
+  <div class="wrap">
+    <div class="kicker">Inference pipeline</div>
+    <h2>From photo to verdict</h2>
+    <p class="lead">
+      <code>ocr_pipeline_mnist.py</code> does no post-processing and no remapping — raw
+      inference, character by character, with disagreement made visible instead of hidden.
+    </p>
+
+    <div class="flow">
+      <div class="fstep">
+        <div class="fnum">STEP 1</div>
+        <h4>Detect boxes</h4>
+        <p>Adaptive threshold and contours find candidate characters, clustered into lines by proximity — not a fixed grid.</p>
+      </div>
+      <div class="fstep">
+        <div class="fnum">STEP 2</div>
+        <h4>Rescue pass</h4>
+        <p>A box rejected only for being too wide — a stray stroke fused on — gets a second look if it fits a gap in its line.</p>
+      </div>
+      <div class="fstep">
+        <div class="fnum">STEP 3</div>
+        <h4>Normalize</h4>
+        <p>Each character is cropped, centered, padded, and resized to match each model's expected input size.</p>
+      </div>
+      <div class="fstep">
+        <div class="fnum">STEP 4</div>
+        <h4>Vote</h4>
+        <p>Every model predicts top-3. Unanimous or majority wins outright; a close split falls back to confidence-weighted scoring.</p>
+      </div>
+    </div>
+
+    <div class="markers">
+      <div class="marker">
+        <span class="mk q">??</span>
+        <p>A character was detected and classified by every model, but they genuinely split with no majority or weighted winner.</p>
+      </div>
+      <div class="marker">
+        <span class="mk nd">[NON-DIGIT?]</span>
+        <p>Every model's top confidence fell below the trust floor — likely not a digit at all, not just a hard one to read.</p>
+      </div>
+    </div>
+    <p style="font-family:var(--mono); font-size:12px; color:var(--ink-3); margin-top:20px; line-height:1.65;">
+      Both markers are fully implemented and wired into the voting logic — neither has fired in a real test run yet. They should trigger correctly on a hard or ambiguous enough input; that just hasn't happened in testing so far.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>CSC-114 AI Fundamentals I · Summer 2026 · FTCC — William Edward Beckham III</p>
+  </div>
+</footer>
+
+</body>
+</html>
